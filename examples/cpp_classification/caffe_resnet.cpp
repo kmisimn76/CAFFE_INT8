@@ -1,4 +1,8 @@
 #include <stdio.h>
+
+#include <sys/time.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <cstring> 
 #include <fstream> 
 #include <iostream> 
@@ -19,7 +23,6 @@
 using caffe::Caffe;
 
 using namespace caffe;
-
 void WrapInputLayer(std::vector<cv::Mat>* input_channels, Blob<float>* input_layer) {
   int width = input_layer->width();
   int height = input_layer->height();
@@ -30,15 +33,6 @@ void WrapInputLayer(std::vector<cv::Mat>* input_channels, Blob<float>* input_lay
     input_data += width * height;
   }
 }
-/*
-void image_crop(cv::Mat& old, cv::Mat& post, int height, int width) {
-	for(int i=0;i<height;i++){
-		for(int j=0;j<width;j++){
-			post.data_at(i,j) = 
-		}
-	}
-}
-*/
 void Preprocess(Net<float>& caffe_net, const cv::Mat& img, cv::Mat& mean,
                             std::vector<cv::Mat>* input_channels, int num_channels_, int height, int width) {
   /* Convert the input image to the input image format of the network. */
@@ -62,10 +56,8 @@ void Preprocess(Net<float>& caffe_net, const cv::Mat& img, cv::Mat& mean,
 
   cv::Mat sample_resized;
   cv::Size input_geometry_(height, width);
-  if (sample_float.size() != input_geometry_){
+  if (sample_float.size() != input_geometry_)
     cv::resize(sample_float, sample_resized, input_geometry_);
-//	image_crop(smaple_float, sample_resized, height, width);
-  }
   else
     sample_resized = sample_float;
 
@@ -83,6 +75,24 @@ void Preprocess(Net<float>& caffe_net, const cv::Mat& img, cv::Mat& mean,
     << "Input channels are not wrapping the input layer of the network.";
 }
 
+static bool PairCompare(const std::pair<float, int>& lhs,
+                        const std::pair<float, int>& rhs) {
+  return lhs.first > rhs.first;
+}
+
+static std::vector<int> Argmax(const std::vector<float>& v, int N) {
+  std::vector<std::pair<float, int> > pairs;
+  for (size_t i = 0; i < v.size(); ++i)
+    pairs.push_back(std::make_pair(v[i], i));
+  std::partial_sort(pairs.begin(), pairs.begin() + N, pairs.end(), PairCompare);
+
+  std::vector<int> result;
+  for (int i = 0; i < N; ++i)
+    result.push_back(pairs[i].second);
+  return result;
+}
+
+
 int truth[50000];
 int matchlabel[1200];
 
@@ -93,8 +103,8 @@ int main(int argc, char** argv)
 	}
 	std::string deploy(argv[1]);
 	std::string model(argv[2]);
-	std::string mean_name("/home/abab2365/workspace/etri1/caffe/data/ilsvrc12/dataset/imagenet_mean.binaryproto");
-	std::string file_name("/home/abab2365/workspace/etri1/caffe/data/ilsvrc12/dataset/ilsvrc12_val_images/ILSVRC2012_val_");
+	std::string mean_name("/home/abab2365/workspace/data/imagenet/images/imagenet_mean.binaryproto");
+	std::string file_name("/home/abab2365/workspace/data/imagenet/images/test_imagenet/ILSVRC2012_val_");
 	//std::string file_name("/home/abab2365/workspace/data/images/test/ILSVRC2012_val_");
 	int num_images = 50000;
 
@@ -118,6 +128,15 @@ int main(int argc, char** argv)
 	float* data = mean_blob.mutable_cpu_data();
 	for (int i = 0; i < num_channels_; ++i) {
 		/* Extract an individual channel. */
+		for (int j=0; j<mean_blob.height()*mean_blob.width(); j++) { //Mobilenet
+			if(i==0) *(data + j) = 103.94;
+			else if(i==1) *(data + j) = 116.78;
+			else if(i==2) *(data + j) = 123.68;
+			else {
+				printf("channel error\n");
+				exit(0);
+			}
+		}
 		cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
 		channels.push_back(channel);
 		data += mean_blob.height() * mean_blob.width();
@@ -131,13 +150,13 @@ int main(int argc, char** argv)
 	cv::Size geometry(caffe_net.input_blobs()[0]->height(), caffe_net.input_blobs()[0]->width());
 	cv::Mat mean(geometry, mean_.type(), channel_mean);
 
-	FILE *match_file = fopen("/home/abab2365/workspace/_etc/mat2py/match_label.txt", "r");
+	FILE *match_file = fopen("/home/abab2365/workspace/data/imagenet/images/match_label.txt", "r");
 	for(int i=1;i<=1000;i++){
 		int a, b;
 		fscanf(match_file, "%d %d", &a, &b);
 		matchlabel[b] = a;
 	}
-	FILE *in = fopen("/home/abab2365/workspace/etri1/caffe/data/ilsvrc12/dataset/ILSVRC2012_validation_ground_truth.txt", "r");
+	FILE *in = fopen("/home/abab2365/workspace/data/imagenet/images/ILSVRC2012_validation_ground_truth.txt", "r");
 	for(int i=1;i<49997;i++){
 		fscanf(in, "%d", &truth[i]);
 		truth[i] = matchlabel[truth[i]];
@@ -152,6 +171,7 @@ int main(int argc, char** argv)
 */	std::cout<<"Test inference\n";
 	int image_count = 0;
 	int predict_count = 0;
+	int top5_count = 0;
 	for(int i=1;i<num_images;i++){
 		if(truth[i]==-1) continue; // validatoin label is vaild when truth != -1
 		char imsg[200];
@@ -169,28 +189,43 @@ int main(int argc, char** argv)
 		WrapInputLayer(&input_channels, input_layer);
     	Preprocess(caffe_net, img, mean, &input_channels, input_layer->channels(), input_layer->height(), input_layer->width());
 
+		struct timeval tstart, tend, tres;
+		gettimeofday(&tstart, NULL);
     	caffe_net.Forward();
+		gettimeofday(&tend, NULL);
+		timersub(&tend, &tstart, &tres);
+		printf("time: %f", tres.tv_sec*1000.0 + tres.tv_usec/1000.0);
 
 		Blob<float>* output_layer = caffe_net.output_blobs()[0];
 		const float* begin = output_layer->cpu_data();
 		const float* end = begin + output_layer->channels();
 		std::vector<float> out(begin, end);
-		int max = 0;
+		/*int max = 0;
 		for(int j=0;j<out.size();j++){
 			//std::cout<<out[j]<<" ";
 			if(out[j] > out[max]) max = j;
+		}*/
+		//std::cout<<"\n"<<max<<" "<<out[max]<<"\n";
+		std::cout<<"\n";
+		std::vector<int> maxN = Argmax(out, 5);
+		for(int ii=0;ii<5;ii++) {
+			if(maxN[ii]==truth[i]) {
+				top5_count++;
+				break;
+			}
 		}
-		std::cout<<"\n"<<max<<" "<<out[max]<<"\n";
 
-		int index = max;
+		int index = maxN[0];
 		if(index==truth[i]){
 			predict_count++;
 		}
 		image_count++;
-		printf("predict rate: %lf\n", (double)predict_count / image_count);
+		printf("top-1 predict rate: %lf\n", (double)predict_count / image_count);
+		printf("top-5 predict rate: %lf\n", (double)top5_count / image_count);
 
 		if(image_count%100==0){
-			printf("%d: predict rate: %lf\n", image_count, (double)predict_count / image_count);
+			printf("%d: top-1 predict rate: %lf\n", image_count, (double)predict_count / image_count);
+			printf("%d: top-5 predict rate: %lf\n", image_count, (double)top5_count / image_count);
 		}
 	}
 

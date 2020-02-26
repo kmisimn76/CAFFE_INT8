@@ -58,13 +58,15 @@ class Layer {
 		//INT8 Edited
 		if (int8_inference_) {
 			// CAUTION: Only for Convolution Layer (weight, bias)
-        	blobs_.resize(layer_param_.blobs_size());
-        	int8_blobs_.resize(layer_param_.blobs_size());
+        	blobs_.resize(0);
+        	//int8_blobs_.resize(layer_param_.blobs_size());
+        	int8_blobs_.resize(1);
         	int8_blobs_[0].reset(new Blob<char>());
         	int8_blobs_[0]->FromProto(layer_param_.blobs(0));
 			if (layer_param_.blobs_size() > 1) {
-        	  blobs_[1].reset(new Blob<Dtype>());
-        	  blobs_[1]->FromProto(layer_param_.blobs(1));
+			  int_blobs_.resize(1);
+        	  int_blobs_[0].reset(new Blob<int>());
+        	  int_blobs_[0]->FromProto(layer_param_.blobs(1));
 			}
 		}
 		else {
@@ -81,11 +83,16 @@ class Layer {
 	  if (param.has_activation_scale_factor() == true) {
 		  activation_scale_factor_ = param.activation_scale_factor();
 	  }
+	  if (param.has_activation_zero_point() == true) {
+		  activation_zero_point_ = param.activation_zero_point();
+	  }
 	  if (param.weight_scale_factor_size() > 0) {
 		  weight_scale_factor_.reserve(param.weight_scale_factor_size());
 		  for(int i = 0; i < param.weight_scale_factor_size(); i++) {
 			  weight_scale_factor_.push_back( param.weight_scale_factor(i) );
+			  printf("%lf ", weight_scale_factor_[i]);
 		  }
+		  printf("\n");
 	  }
     }
   virtual ~Layer() {}
@@ -210,6 +217,9 @@ class Layer {
   Dtype& activation_scale_factor() {
 	  return activation_scale_factor_;
   }
+  char& activation_zero_point() {
+	  return activation_zero_point_;
+  }
   vector<Dtype>& weight_scale_factor() {
 	  return weight_scale_factor_;
   }
@@ -217,6 +227,9 @@ class Layer {
   //INT8 Edited
   vector<shared_ptr<Blob<char> > >& int8_blobs() {
 	  return int8_blobs_;
+  }
+  vector<shared_ptr<Blob<int> > >& int_blobs() {
+	  return int_blobs_;
   }
 
   /**
@@ -374,11 +387,13 @@ class Layer {
   bool int8_inference_;
   /** INT8 Inference Scale Factors */
   Dtype activation_scale_factor_;
+  char activation_zero_point_;
   vector<Dtype> weight_scale_factor_;
   
   //INT8 Edited
   /** INT8 Weight blob */
   vector<shared_ptr<Blob<char> > > int8_blobs_;
+  vector<shared_ptr<Blob<int> > > int_blobs_;
 
   /** Vector indicating whether to compute the diff of each param blob. */
   vector<bool> param_propagate_down_;
@@ -676,7 +691,9 @@ void Layer<Dtype>::Dequantization_int8(const vector<Blob<int>*>& top_int,
 		for (int num = 0; num < nums; num++) {
 			for (int c = 0; c < channels; c++) {
 				for (int i = 0; i < size; i++) {
-						*top_data = (Dtype)(*int_data) / (activation_scale_factor_ * weight_scale_factor_[c]);
+						float factor = 1.0 / (activation_scale_factor_ * weight_scale_factor_[c]);
+						if(weight_scale_factor_[c] == 0.0) factor = 0;
+						*top_data = (Dtype)(*int_data) * factor;
 						top_data++;
 						int_data++;
 				}

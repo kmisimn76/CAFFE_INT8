@@ -1,0 +1,48 @@
+CXX src/caffe/net.cpp
+src/caffe/net.cpp: In instantiation of 'Dtype caffe::Net<Dtype>::ForwardFromTo(int, int) [with Dtype = float]':
+src/caffe/net.cpp:1124:1:   required from here
+src/caffe/net.cpp:571:19: error: request for member 'count' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
+    for(int ii=0;ii<bottom_vecs_[i][0].count();ii++) {
+                   ^
+src/caffe/net.cpp:572:52: error: request for member 'cpu_data' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
+     fprintf(f, "%f ", bottom_vecs_[i][0].cpu_data()[ii]);
+                                                    ^
+src/caffe/net.cpp:569:8: warning: unused variable 'c' [-Wunused-variable]
+    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+        ^
+src/caffe/net.cpp:602:19: error: request for member 'count' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
+    for(int ii=0;ii<top_vecs_[i][0].count();ii++) {
+                   ^
+src/caffe/net.cpp:603:49: error: request for member 'cpu_data' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
+     fprintf(f, "%f ", top_vecs_[i][0].cpu_data()[ii]);
+                                                 ^
+src/caffe/net.cpp:599:8: warning: unused variable 'c' [-Wunused-variable]
+    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+        ^
+src/caffe/net.cpp:532:7: warning: unused variable 'np' [-Wunused-variable]
+  char np[100];
+       ^
+src/caffe/net.cpp: In instantiation of 'Dtype caffe::Net<Dtype>::ForwardFromTo(int, int) [with Dtype = double]':
+src/caffe/net.cpp:1124:1:   required from here
+src/caffe/net.cpp:571:19: error: request for member 'count' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
+    for(int ii=0;ii<bottom_vecs_[i][0].count();ii++) {
+                   ^
+src/caffe/net.cpp:572:52: error: request for member 'cpu_data' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
+     fprintf(f, "%f ", bottom_vecs_[i][0].cpu_data()[ii]);
+                                                    ^
+src/caffe/net.cpp:569:8: warning: unused variable 'c' [-Wunused-variable]
+    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+        ^
+src/caffe/net.cpp:602:19: error: request for member 'count' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
+    for(int ii=0;ii<top_vecs_[i][0].count();ii++) {
+                   ^
+src/caffe/net.cpp:603:49: error: request for member 'cpu_data' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
+     fprintf(f, "%f ", top_vecs_[i][0].cpu_data()[ii]);
+                                                 ^
+src/caffe/net.cpp:599:8: warning: unused variable 'c' [-Wunused-variable]
+    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+        ^
+src/caffe/net.cpp:532:7: warning: unused variable 'np' [-Wunused-variable]
+  char np[100];
+       ^
+Makefile:592: recipe for target '.build_debug/src/caffe/net.o' failed

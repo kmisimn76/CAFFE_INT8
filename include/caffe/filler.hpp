@@ -191,7 +191,7 @@ class MSRAFiller : public Filler<Dtype> {
   explicit MSRAFiller(const FillerParameter& param)
       : Filler<Dtype>(param) {}
   virtual void Fill(Blob<Dtype>* blob) {
-    CHECK(blob->count());
+    /*CHECK(blob->count());
     int fan_in = blob->count() / blob->shape(0);
     // Compatibility with ND blobs
     int fan_out = blob->num_axes() > 1 ?
@@ -209,7 +209,7 @@ class MSRAFiller : public Filler<Dtype> {
     caffe_rng_gaussian<Dtype>(blob->count(), Dtype(0), std,
         blob->mutable_cpu_data());
     CHECK_EQ(this->filler_param_.sparse(), -1)
-         << "Sparsity not supported by this Filler.";
+         << "Sparsity not supported by this Filler.";*/
   }
 };
 

@@ -36,6 +36,7 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   //INT8 Edited
   void forward_cpu_gemm_int8_conv(const char* input,
     const char* weights, int* output, bool skip_im2col = false);
+  void forward_cpu_int_bias(int* output, const int* bias);
 
   void forward_cpu_gemm(const Dtype* input, const Dtype* weights,
       Dtype* output, bool skip_im2col = false);

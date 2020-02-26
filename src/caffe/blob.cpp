@@ -533,6 +533,12 @@ void Blob<Dtype>::FromProto(const BlobProto& proto, bool reshape) {
 		data_vec[i] = datas[i];
 	}
 	DLOG(INFO)<<count_<<": "<<(int)data_vec[0]<<" "<<(int)data_vec[1]<<"\n";
+  }
+  else if(proto.int_data_size() > 0) {
+    CHECK_EQ(count_, proto.int_data_size());
+    for (int i = 0; i < count_; ++i) {
+      data_vec[i] = proto.int_data(i);
+    }
   } else if (proto.double_data_size() > 0) {
     CHECK_EQ(count_, proto.double_data_size());
     for (int i = 0; i < count_; ++i) {

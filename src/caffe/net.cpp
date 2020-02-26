@@ -142,8 +142,8 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
         << "Memory required for data: " << memory_used_ * sizeof(Dtype);
     const int param_size = layer_param.param_size();
     const int num_param_blobs = layers_[layer_id]->blobs().size();
-    CHECK_LE(param_size, num_param_blobs)
-        << "Too many params specified for layer " << layer_param.name();
+    //CHECK_LE(param_size, num_param_blobs)
+    //    << "Too many params specified for layer " << layer_param.name();
     ParamSpec default_param_spec;
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       const ParamSpec* param_spec = (param_id < param_size) ?
@@ -516,16 +516,69 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
   }
 }
 
+#define SVAE
 template <typename Dtype>
 Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
   CHECK_GE(start, 0);
   CHECK_LT(end, layers_.size());
   Dtype loss = 0;
 
+	char filename[100];
+#ifdef SVAE
+	char dic[100][100];
+	FILE* csv = fopen("num.csv", "r");
+	FILE* f;
+
+	int vcnt = 0;
+	char np[100];
+	while(!feof(csv))
+	{
+		int i;
+		fscanf(csv, "%d, ", &i);
+		fscanf(csv, "%s", dic[i]);
+		vcnt++;
+	}
+	fclose(csv);
+#endif
+
+
+int nu = -1;
   for (int i = start; i <= end; ++i) {
     for (int c = 0; c < before_forward_.size(); ++c) {
       before_forward_[c]->run(i);
     }
+#ifdef SVAE
+	for(int ll=0;ll<vcnt;ll++) {
+		if(strstr(layers_[i]->layer_param().name().c_str(), dic[ll])!=0) {
+			nu = ll;
+			break;
+		}
+		char tmp[80];
+		strcpy(tmp, layers_[i]->layer_param().name().c_str());
+		tmp[11]='r';
+		tmp[12]='e';
+		tmp[13]='l';
+		tmp[14]='u';
+		if(strstr(tmp, dic[ll])!=0) {
+			nu = ll;
+			break;
+		}
+	}
+
+	if(nu!=-1 && strcmp(layers_[i]->layer_param().type().c_str(), "Convolution")==0) {
+		sprintf(filename, "./results/retinaface/input/%d_int8_input", nu);
+		f = fopen(filename, "w");
+		{
+			int tensor[4] = { bottom_vecs_[i][0]->num(), bottom_vecs_[i][0]->channels(), bottom_vecs_[i][0]->height(), bottom_vecs_[i][0]->width() };
+			int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+			//fwrite(bottom_vecs_[i][0], sizeof(float), c, f);
+			for(int ii=0;ii<bottom_vecs_[i][0]->count();ii++) {
+				fprintf(f, "%0.16f\n", bottom_vecs_[i][0]->cpu_data()[ii]);
+			}
+		}
+		fclose(f);
+	}
+#endif
 
 		struct timeval s_t, e_t, timer;
 		gettimeofday(&s_t, NULL);
@@ -540,7 +593,27 @@ Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
     if (debug_info_) { ForwardDebugInfo(i); }
     for (int c = 0; c < after_forward_.size(); ++c) {
       after_forward_[c]->run(i);
+
     }
+
+#ifdef SVAE
+	//if((strcmp(layers_[i]->layer_param().type().c_str(), "Scale")==0 || strcmp(layers_[i]->layer_param().type().c_str(), "BatchNorm")==0)) {
+	if(nu!=-1 && strcmp(layers_[i]->layer_param().type().c_str(), "Convolution")==0) {
+		sprintf(filename, "./results/retinaface/output/%d_int8_output", nu);
+		f = fopen(filename, "w");
+		{
+			int tensor[4] = { top_vecs_[i][0]->num(), top_vecs_[i][0]->channels(), top_vecs_[i][0]->height(), top_vecs_[i][0]->width() };
+			int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+			//fwrite(top_vecs_[i][0], sizeof(float), c, f);
+			//fprintf(f, "%f ", top_vecs_[i][0]);
+			for(int ii=0;ii<top_vecs_[i][0]->count();ii++) {
+				fprintf(f, "%0.16f\n", top_vecs_[i][0]->cpu_data()[ii]);
+			}
+		}
+		fclose(f);
+	}
+#endif
+
   }
 
   return loss;
@@ -765,9 +838,11 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
 	//INT8 Edited
 	vector<shared_ptr<Blob<char> > >& target_int8_blobs =
 		layers_[target_layer_id]->int8_blobs();
-    CHECK_EQ(target_blobs.size(), source_layer.blobs_size())
-        << "Incompatible number of blobs for layer " << source_layer_name;
-    for (int j = 0; j < target_blobs.size(); ++j) {
+	vector<shared_ptr<Blob<int> > >& target_int_blobs =
+		layers_[target_layer_id]->int_blobs();
+    //CHECK_EQ(target_blobs.size()+target_int8_blobs.size()+target_int_blobs.size(), source_layer.blobs_size())
+     //   << "Incompatible number of blobs for layer " << source_layer_name <<"size: "<<target_blobs.size()<<" "<<target_int8_blobs.size()<<" "<<target_int_blobs.size();
+/*    for (int j = 0; j < target_blobs.size(); ++j) {
 		//INT8 Edited
       if (!(j==0 && layers_[target_layer_id]->int8_inference()) && !target_blobs[j]->ShapeEquals(source_layer.blobs(j))) {
         Blob<Dtype> source_blob;
@@ -806,23 +881,44 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
 		if(j==1) DLOG(INFO) << "Copy bias Blob Layer " <<source_layer_name;
 		else DLOG(INFO) << "Copy FP Blob Layer " <<source_layer_name;
 	  }
+	}*/
+	if (!layers_[target_layer_id]->int8_inference()) {
+      const bool kReshape = false;
+		for (int j = 0; j < target_blobs.size(); ++j) {
+		  	target_blobs[j]->FromProto(source_layer.blobs(j), kReshape);
+			if(j==1) DLOG(INFO) << "Copy bias Blob Layer " <<source_layer_name;
+			else DLOG(INFO) << "Copy FP Blob Layer " <<source_layer_name;
+		}
+	}
+	else {
+      	const bool kReshape = false;
+		target_int8_blobs[0]->FromProto(source_layer.blobs(0), kReshape);
+		DLOG(INFO) << "Copy int8 Blob Layer " <<source_layer_name;
+		if(source_layer.blobs_size() > 1) {
+			target_int_blobs[0]->FromProto(source_layer.blobs(1), kReshape);
+			DLOG(INFO) << "Copy int bias Blob Layer " <<source_layer_name;
+		}
 	}
 
 	//INT8 Edited
 	// Load scale factor from binary proto
-	if ( layers_[target_layer_id]->layer_param().int8_inference() == true ) {
+	if ( layers_[target_layer_id]->layer_param().int8_inference() != 0 ) {
 		DLOG(INFO) << "Reading scale factor";
 		DLOG(INFO) << source_layer.int8_inference();
 //		if (source_layer.has_activation_scale_factor() == true) {
 		if(true){
 		layers_[target_layer_id]->activation_scale_factor() = source_layer.activation_scale_factor();
+		layers_[target_layer_id]->activation_zero_point() = source_layer.activation_zero_point();
 		    DLOG(INFO) <<"sclae factor: "<<layers_[target_layer_id]->activation_scale_factor()<<"\n";
+		    DLOG(INFO) <<"zero point: "<<layers_[target_layer_id]->activation_zero_point()<<"\n";
 		}
 		//if (source_layer.weight_scale_factor_size() > 0) {
 		if(true){
+			//printf("weight scale length: %d\n", source_layer.weight_scale_factor_size());
 			layers_[target_layer_id]->weight_scale_factor().reserve(source_layer.weight_scale_factor_size());
 			for(int i = 0; i < source_layer.weight_scale_factor_size(); i++) {
 				layers_[target_layer_id]->weight_scale_factor().push_back( source_layer.weight_scale_factor(i) );
+			//	printf("%lf ", source_layer.weight_scale_factor(i));
 				if(i==source_layer.weight_scale_factor_size()-1) DLOG(INFO) <<"scale factor: "<<layers_[target_layer_id]->weight_scale_factor()[i];
 			}
 		    DLOG(INFO) <<"sclae factor: "<<source_layer.weight_scale_factor_size()<<"\n";

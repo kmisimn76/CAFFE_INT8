@@ -10,6 +10,7 @@ message BlobShape {
 message BlobProto {
   optional BlobShape shape = 7;
   optional bytes int8_data = 10; //INT8 Edited
+  repeated int32 int_data = 11 [packed = true];
   repeated float data = 5 [packed = true];
   repeated float diff = 6 [packed = true];
   repeated double double_data = 8 [packed = true];
@@ -359,7 +360,8 @@ message LayerParameter {
   optional bool int8_inference = 12 [default = false]; //INT8 Edited
 
   optional float activation_scale_factor = 13; //INT8 Edited
-  repeated float weight_scale_factor = 14 [packed = true]; //INT8 Edited
+  optional float activation_zero_point = 14; //INT8 Edited
+  repeated float weight_scale_factor = 15 [packed = true]; //INT8 Edited
 
 
   // Rules controlling whether and when a layer is included in the network,

@@ -29,12 +29,47 @@ void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, con
 }
 
 //INT8 Edited
+void sblas_intgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const int alpha, const int* A, const float* B, const int beta, int* C) {
+	int* C_data = C;
+	for(int i = 0; i < M; i++){
+		for(int j = 0; j < N; j++){
+			const int* A_data = A + K*i;
+			const float* B_data = B + j;
+			int acc = 0;
+			for(int k = 0; k < K; k++){
+				acc += (*A_data) * (*B_data);
+				A_data++;
+				B_data += N;
+			}
+			(*C_data) = acc + (*C_data) * beta;
+			C_data++;
+		}
+	}
+}
+
+//INT8 Edited
 void caffe_cpu_gemm(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
     const char alpha, const char* A, const char* B, const char beta,
     int* C) {
   // char gemm
   sblas_igemm(TransA, TransB, M, N, K, alpha, A, B, beta, C);
+}
+//INT8 Edited
+template<>
+void caffe_cpu_igemm<float>(const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+    const int alpha, const int* A, const float* B, const int beta,
+    int* C) {
+  // char gemm
+  sblas_intgemm(TransA, TransB, M, N, K, alpha, A, B, beta, C);
+}
+template<>
+void caffe_cpu_igemm<double>(const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+    const int alpha, const int* A, const double* B, const int beta,
+    int* C) {
+  // char gemm
 }
 
 template<>
@@ -357,9 +392,10 @@ void caffe_rng_gaussian(const int n, const Dtype a,
 template<> void caffe_rng_gaussian<char>(const int n, const char a,
                                const char sigma, char* r) {
   	CHECK(r);
-  	CHECK_GT(sigma, 0);
+	char _sigma = 1;
+  	CHECK_GT(_sigma, 0);
 	float a_ = (float)((int)a);
-	float sigma_ = (float)((int)sigma);
+	float sigma_ = (float)((int)_sigma);
   	boost::normal_distribution<float> random_distribution(a_, sigma_);
   	boost::variate_generator<caffe::rng_t*, boost::normal_distribution<float> >
   	    variate_generator(caffe_rng(), random_distribution);

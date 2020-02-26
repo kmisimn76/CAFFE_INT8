@@ -139,8 +139,8 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   }
   bias_term_ = this->layer_param_.convolution_param().bias_term();
   vector<int> bias_shape(bias_term_, num_output_);
-  if (this->blobs_.size() > 0) {
-    CHECK_EQ(1 + bias_term_, this->blobs_.size())
+  if (this->blobs_.size() > 0 || this->int8_blobs_.size() > 0) {
+    /*CHECK_EQ(1 + bias_term_, this->blobs_.size())
         << "Incorrect number of weight blobs.";
     if (weight_shape != this->blobs_[0]->shape()) {
       Blob<Dtype> weight_shaped_blob(weight_shape);
@@ -154,16 +154,24 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
           << bias_shaped_blob.shape_string() << "; instead, shape was "
           << this->blobs_[1]->shape_string();
     }
-    LOG(INFO) << "Skipping parameter initialization";
+    LOG(INFO) << "Skipping parameter initialization";*/
   } else {
 	//INT8 Edited
-    if (bias_term_) {
-      this->blobs_.resize(2);
-	  this->int8_blobs_.resize(2);
-    } else {
-      this->blobs_.resize(1);
-	  this->int8_blobs_.resize(1);
-    }
+	if (this->int8_inference_) {
+		if (bias_term_) {
+		  this->int8_blobs_.resize(1);
+		  this->int_blobs_.resize(1);
+		} else {
+		  this->int8_blobs_.resize(1);
+		}
+	}
+	else {
+		if (bias_term_) {
+		  this->blobs_.resize(2);
+		} else {
+		  this->blobs_.resize(1);
+		}
+	}
     // Initialize and fill the weights:
     // output channels x input channels per-group x kernel height x kernel width
 
@@ -184,10 +192,18 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 	}
     // If necessary, initialize and fill the biases.
     if (bias_term_) {
-      this->blobs_[1].reset(new Blob<Dtype>(bias_shape));
-      shared_ptr<Filler<Dtype> > bias_filler(GetFiller<Dtype>(
-          this->layer_param_.convolution_param().bias_filler()));
-      bias_filler->Fill(this->blobs_[1].get());
+		if (this->int8_inference_) {
+     		 this->int_blobs_[0].reset(new Blob<int>(bias_shape));
+     //		 shared_ptr<Filler<Dtype> > bias_filler(GetFiller<Dtype>(
+     //		     this->layer_param_.convolution_param().bias_filler()));
+     	//	 bias_filler->Fill(this->int_blobs_[0].get());
+		}
+		else {
+     		 this->blobs_[1].reset(new Blob<Dtype>(bias_shape));
+     		 shared_ptr<Filler<Dtype> > bias_filler(GetFiller<Dtype>(
+     		     this->layer_param_.convolution_param().bias_filler()));
+     		 bias_filler->Fill(this->blobs_[1].get());
+		}
     }
   }
   //INT8 Edited
@@ -295,6 +311,15 @@ void BaseConvolutionLayer<Dtype>::forward_cpu_gemm_int8_conv(const char* input,
         0, output + output_offset_ * g);
   }
 }
+
+template <typename Dtype>
+void BaseConvolutionLayer<Dtype>::forward_cpu_int_bias(int* output,
+    const int* bias) {
+  caffe_cpu_igemm(CblasNoTrans, CblasNoTrans, num_output_,
+      out_spatial_dim_, 1, 1, bias, bias_multiplier_.cpu_data(),
+      1, output);
+}
+
 
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::forward_cpu_gemm(const Dtype* input,

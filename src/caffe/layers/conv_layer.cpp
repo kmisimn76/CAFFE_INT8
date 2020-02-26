@@ -1,4 +1,5 @@
 #include <vector>
+#include <string.h>
 
 #include "caffe/layers/conv_layer.hpp"
 
@@ -77,6 +78,10 @@ template <typename Dtype>
 void ConvolutionLayer<Dtype>::Forward_int8_cpu(const vector<Blob<char>*>& bottom,
 		const vector<Blob<int>*>& top) {
 	const char* weight = this->int8_blobs_[0]->cpu_data();
+	if(bottom.size()!=1) {
+		printf("warning ! : bottom size: %ld != 1\n", bottom.size());
+		sleep(10);
+	}
 	for (int i = 0; i < bottom.size(); i++) {
 		const char* bottom_data = bottom[i]->cpu_data();
 		int* top_data = top[i]->mutable_cpu_data();
@@ -84,8 +89,61 @@ void ConvolutionLayer<Dtype>::Forward_int8_cpu(const vector<Blob<char>*>& bottom
 			// src/caffe/layers/base_conv_layer.cpp
 			this->forward_cpu_gemm_int8_conv(bottom_data + n * this->bottom_dim_, weight,
 				top_data + n * this->top_dim_);
+		    if (this->bias_term_) {
+		      const int* bias = this->int_blobs_[0]->cpu_data();
+		      this->forward_cpu_int_bias(top_data + n * this->top_dim_, bias);
+		    }
 		}
 	}
+
+#define PRINT_INT8_LOG
+#ifdef PRINT_INT8_LOG
+	char filename[100];
+/*
+	FILE* csv = fopen("num.csv", "r");
+	int nu = -1;
+	char np[100];
+	while(!feof(csv))
+	{
+		int i;
+		fscanf(csv, "%d, ", &i);
+		fscanf(csv, "%s", np);
+		if(strstr(this->layer_param_.name().c_str(), np)!=0) {
+			nu = i;
+			break;
+		}
+	}*/
+/*
+	sprintf(filename, "./results/retinaface/weight/%d_retiina_int8_weight", nu);
+	FILE* f = fopen(filename, "ab");
+	{
+		int tensor[4] = { this->int8_blobs_[0]->num(), this->int8_blobs_[0]->channels(), this->int8_blobs_[0]->height(), this->int8_blobs_[0]->width() };
+		int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+		//fwrite(tensor, sizeof(int), 4, f);
+		fwrite(weight, sizeof(char), c, f);
+	}
+	fclose(f);
+
+	sprintf(filename, "./results/retinaface/input/%d_int8_input", nu);
+	f = fopen(filename, "ab");
+	{
+		int tensor[4] = { bottom[0]->num(), bottom[0]->channels(), bottom[0]->height(), bottom[0]->width() };
+		int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+		//fwrite(tensor, sizeof(int), 4, f);
+		fwrite(bottom[0], sizeof(char), c, f);
+	}
+	fclose(f);
+
+	sprintf(filename, "./results/retinaface/output/%d_int8_output", nu);
+	f = fopen(filename, "ab");
+	{
+		int tensor[4] = { top[0]->num(), top[0]->channels(), top[0]->height(), top[0]->width() };
+		int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
+		//fwrite(tensor, sizeof(int), 4, f);
+		fwrite(top[0], sizeof(int), c, f);
+	}
+	fclose(f);*/
+#endif
 }
 
 template <typename Dtype>
