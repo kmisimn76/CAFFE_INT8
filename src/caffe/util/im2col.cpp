@@ -21,7 +21,7 @@ void im2col_cpu(const Dtype* data_im, const int channels,
     const int pad_h, const int pad_w,
     const int stride_h, const int stride_w,
     const int dilation_h, const int dilation_w,
-    Dtype* data_col) {
+    Dtype* data_col, int val) {
   const int output_h = (height + 2 * pad_h -
     (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
   const int output_w = (width + 2 * pad_w -
@@ -34,7 +34,7 @@ void im2col_cpu(const Dtype* data_im, const int channels,
         for (int output_rows = output_h; output_rows; output_rows--) {
           if (!is_a_ge_zero_and_a_lt_b(input_row, height)) {
             for (int output_cols = output_w; output_cols; output_cols--) {
-              *(data_col++) = 0;
+              *(data_col++) = val;
             }
           } else {
             int input_col = -pad_w + kernel_col * dilation_w;
@@ -42,7 +42,7 @@ void im2col_cpu(const Dtype* data_im, const int channels,
               if (is_a_ge_zero_and_a_lt_b(input_col, width)) {
                 *(data_col++) = data_im[input_row * width + input_col];
               } else {
-                *(data_col++) = 0;
+                *(data_col++) = val;
               }
               input_col += stride_w;
             }
@@ -60,17 +60,17 @@ template void im2col_cpu<char>(const char* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
     const int stride_w, const int dilation_h, const int dilation_w,
-    char* data_col);
+    char* data_col, int val=0);
 template void im2col_cpu<float>(const float* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
     const int stride_w, const int dilation_h, const int dilation_w,
-    float* data_col);
+    float* data_col, int val=0);
 template void im2col_cpu<double>(const double* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
     const int stride_w, const int dilation_h, const int dilation_w,
-    double* data_col);
+    double* data_col, int val=0);
 
 template <typename Dtype>
 inline void im2col_nd_core_cpu(const Dtype* data_input, const bool im2col,

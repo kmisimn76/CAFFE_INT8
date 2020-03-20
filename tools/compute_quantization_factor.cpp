@@ -214,6 +214,15 @@ double estimateKLDivergence(Dist &P, Dist &Q, double sum_P, double sum_Q)
 	}
 
 	double divergence = 0;
+
+	for (int i=0;i<P.num;i++)
+	{
+		if (P.data[i]>0 && Q.data[i]>0)
+			divergence += P.data[i] * log(P.data[i] / Q.data[i]);
+	}
+	divergence /= sum_P;
+	divergence += log(sum_Q / sum_P);
+/*
 	for (int i=0;i<P.num;i++)
 	{
 		P.data[i] /= sum_P;
@@ -221,6 +230,16 @@ double estimateKLDivergence(Dist &P, Dist &Q, double sum_P, double sum_Q)
 		if (P.data[i]>0 && Q.data[i]>0)
 			divergence += P.data[i] * log(P.data[i] / Q.data[i]);
 	}
+*/
+/*	double tt = 0;
+	for (int i=0;i<P.num;i++) {
+		if (P.data[i]>0 && Q.data[i]>0)
+		tt += P.data[i] * log(sum_Q / sum_P);
+		else
+			printf("aa\n");
+	}
+	divergence += tt / sum_P;*/
+
 	return divergence;
 }
 
@@ -264,7 +283,9 @@ void extractMaxLayerOutput(Net<float> &caffe_net, std::string img_path, cv::Mat&
 	}
 
 	int iter = 0;
-	std::cout<<"extractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+	//std::cout<<"extractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+	printf("extractMaxLayerOutput: [%d/%d]         \r", iter, img_num);
+	fflush(stdout);
 	/*
 	BOOST_FOREACH(const fs::path& p, std::make_pair(fs::directory_iterator(path), fs::directory_iterator()))
 	{
@@ -315,7 +336,7 @@ void extractMaxLayerOutput(Net<float> &caffe_net, std::string img_path, cv::Mat&
 
 		iter++;
 		//std::cout<<"\rextractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
-		printf("\rextractMaxLayerOutput: [%d/%d]\n",iter,img_num);
+		printf("\rextractMaxLayerOutput: [%d/%d]            \r",iter,img_num);
 		fflush(stdout);
 	}
 }
@@ -366,7 +387,9 @@ void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& me
 
 
 	int iter = 0;
-	std::cout<<"ObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+	//std::cout<<"ObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+	printf("ObtainDistribution: [%d/%d]      \r", iter, img_num);
+	fflush(stdout);
 	/*
 	BOOST_FOREACH(const fs::path& p, std::make_pair(fs::directory_iterator(path), fs::directory_iterator()))
 	{
@@ -412,7 +435,7 @@ void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& me
 
 		iter++;
 		//std::cout<<"\rObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
-		printf("\rObtainDistribution: [%d/%d]\n",iter,img_num);
+		printf("\rObtainDistribution: [%d/%d]     \r",iter,img_num);
 		fflush(stdout);
 	}
 }
@@ -444,6 +467,8 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 		}
 		for (int i = quantize_level; i<INTERVAL_NUM; i++)
 		{
+			printf("Activation Quantizing [%d/%d]: [%d/%d] - min_KLD: %lf                       \r", layer, quant_data.size(), i, INTERVAL_NUM, min_divergence);
+			fflush(stdout);
 			Dist P, candidate_Q, Q;
 			double sum_P = 0.0f;
 			double sum_Q = 0.0f;
@@ -507,8 +532,10 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 		double threshold = ((double)index + (double)0.5) * quant_data[layer].distribution.interval;
 		quant_data[layer].activation_scale_factor = (float)(quantize_level - 1) / (float)threshold;
 
-		std::cout << "Activation Quantizing" << ((quant_data[layer].winograd)?("(winograd)"):(":")) << "["<<layer<<"/"<<quant_data.size()<<"]: ";
-		std::cout<<index<<"("<<min_divergence<<"), "<<quant_data[layer].activation_scale_factor<<"\n";
+		printf("%d %lf %lf                                                     \n", index, threshold, min_divergence);
+		std::cout << "Activation Quantizing" << ((quant_data[layer].winograd)?("(winograd)"):(":")) << "["<<layer<<"/"<<quant_data.size()<<"]: "<<quant_data[layer].activation_scale_factor<<"\n";	
+		//std::cout << "Activation Quantizing" << ((quant_data[layer].winograd)?("(winograd)"):(":")) << "["<<layer<<"/"<<quant_data.size()<<"]: ";
+		//std::cout<<index<<"("<<min_divergence<<"), "<<quant_data[layer].activation_scale_factor<<"\n";
 	}
 }
 
@@ -540,9 +567,8 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 		//}
 
 			//Per-Channel
-	/*	
+		
 		for (int j=0;j<weight->num();j++){
-			printf("we ");
 			float max = 0.0;
 			const float *data_array = weight->cpu_data() + (j * height*width*channels);
 			for (int r=0;r<height*width*channels;r++){
@@ -559,37 +585,6 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 			else {
 				if(isWino){
 				   	quant_data[i].weight_scale_factor[j] = 31.0f / max;
-					//quant_data[i].weight_scale_factor[j] = 127.0f / max;
-				}
-				else {
-					quant_data[i].weight_scale_factor[j] = 127.0f / max;
-				}
-			}
-		}
-	*/	
-			//Per-Layer
-		
-		float max = 0.0;
-		for (int j=0;j<weight->num();j++){
-			const float *data_array = weight->cpu_data() + (j * height*width*channels);
-			for (int r=0;r<height*width*channels;r++){
-				float data = *data_array;
-				if (max < abs(data)){
-					max = abs(data);
-				}
-				data_array++;
-			}
-			quant_data[i].weight_scale_factor.push_back(0);
-		}
-		if (max < 0.0001) {
-			for (int j=0;j<weight->num();j++){
-				quant_data[i].weight_scale_factor[j] = 0.0f;
-			}
-		}
-		else {
-			for (int j=0;j<weight->num();j++){
-				if(isWino){
-					quant_data[i].weight_scale_factor[j] = 31.0f / max;
 					//quant_data[i].weight_scale_factor[j] = 127.0f / max;
 				}
 				else {
@@ -642,11 +637,11 @@ void SaveQuantizedModel(std::string src_model_path, std::vector<LayerQuantData> 
 			if ( !(net_param.layer(i).name().compare(quant_data[j].layer_name) == 0) ) continue;
 			LayerParameter* layer_param = net_param.mutable_layer(i);
 			layer_param->clear_activation_scale_factor();
-			layer_param->clear_activation_zero_point();
+			//layer_param->clear_activation_zero_point();
 			layer_param->clear_weight_scale_factor();
 			
 			layer_param->set_activation_scale_factor(quant_data[j].activation_scale_factor);
-			layer_param->set_activation_zero_point(0);
+			//layer_param->set_activation_zero_point(-1);
 			for (int k = 0; k < quant_data[j].weight_scale_factor.size(); k++) {
 				layer_param->add_weight_scale_factor(quant_data[j].weight_scale_factor[k]);
 			}

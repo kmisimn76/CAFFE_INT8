@@ -49,7 +49,6 @@ static void get_gpus(vector<int>* gpus) {
   }
 }
 
-
 void WrapInputLayer(std::vector<cv::Mat>* input_channels, Blob<float>* input_layer) {
   int width = input_layer->width();
   int height = input_layer->height();
@@ -60,7 +59,6 @@ void WrapInputLayer(std::vector<cv::Mat>* input_channels, Blob<float>* input_lay
     input_data += width * height;
   }
 }
-
 void Preprocess(Net<float>& caffe_net, const cv::Mat& img, cv::Mat& mean,
                             std::vector<cv::Mat>* input_channels, int num_channels_, int height, int width) {
   /* Convert the input image to the input image format of the network. */
@@ -82,39 +80,16 @@ void Preprocess(Net<float>& caffe_net, const cv::Mat& img, cv::Mat& mean,
   else
     sample.convertTo(sample_float, CV_32FC1);
 
-  int off = 0; //mobilenet
-  cv::Mat sample_clip;// = sample_float;
-  int col = sample_float.cols;
-  int row = sample_float.rows;
-  if (row < col) {
-	  off = (col - row) / 2;
-  	  cv::Rect rect(off, 0, row, row);
-	  sample_clip = sample_float(rect);
-  }
-  else {
-	  off = (row - col) / 2;
-  	  cv::Rect rect(0, off, col, col);
-	  sample_clip = sample_float(rect);
-  }
-
   cv::Mat sample_resized;
   cv::Size input_geometry_(height, width);
-  if (sample_clip.size() != input_geometry_){
-    cv::resize(sample_clip, sample_resized, input_geometry_);
-//	image_crop(smaple_float, sample_resized, height, width);
-  }
+  if (sample_float.size() != input_geometry_)
+    cv::resize(sample_float, sample_resized, input_geometry_);
   else
-    sample_resized = sample_clip;
+    sample_resized = sample_float;
 
-  //mobilenet
-  //sample_resized = sample_resized.t();
-  //cv::cvtColor(sample_resized, sample_resized, cv::COLOR_RGB2BGR);
-  //printf("sample image data: %f ", *(sample_resized.ptr<float>(0)));
 
   cv::Mat sample_normalized;
   cv::subtract(sample_resized, mean, sample_normalized);
-
-  sample_normalized = 0.017 * sample_normalized;
 
   /* This operation will write the separate BGR planes directly to the
    * input layer of the network because it is wrapped by the cv::Mat
@@ -140,8 +115,8 @@ class LayerQuantData
 public:
 	LayerQuantData() {
 		distribution.num = INTERVAL_NUM;
-		distribution.max_output_value = -10000.0;
-		distribution.min_output_value = 10000.0;
+		distribution.max_output_value = 0;
+		distribution.min_output_value = 0;
 		distribution.interval = 0;
 		for (int j=0;j<INTERVAL_NUM;j++) distribution.data[j] = 0.0f;
 	}
@@ -153,6 +128,7 @@ public:
 	int activation_zero_point;
 	bool winograd;
 	std::vector<float> weight_scale_factor;
+	std::vector<int> weight_zero_point;
 };
 
 double estimateKLDivergence(Dist &P, Dist &Q, double sum_P, double sum_Q)
@@ -166,14 +142,14 @@ double estimateKLDivergence(Dist &P, Dist &Q, double sum_P, double sum_Q)
 	double divergence = 0;
 	for (int i=0;i<P.num;i++)
 	{
-		P.data[i] /= sum_P;
-		Q.data[i] /= sum_Q;
 		if (P.data[i]>0 && Q.data[i]>0)
 			divergence += P.data[i] * log(P.data[i] / Q.data[i]);
 	}
+	divergence /= sum_P;
+	divergence += log(sum_Q / sum_P);
+
 	return divergence;
 }
-
 
 void extractMaxLayerOutput(Net<float> &caffe_net, std::string img_path, cv::Mat& mean,  std::vector<LayerQuantData> &quant_data)
 {
@@ -214,7 +190,9 @@ void extractMaxLayerOutput(Net<float> &caffe_net, std::string img_path, cv::Mat&
 	}
 
 	int iter = 0;
-	std::cout<<"extractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+//	std::cout<<"extractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+	printf("extractMaxLayerOutput: [%d/%d]\r", iter, img_num);
+	fflush(stdout);
 	/*
 	BOOST_FOREACH(const fs::path& p, std::make_pair(fs::directory_iterator(path), fs::directory_iterator()))
 	{
@@ -268,8 +246,11 @@ void extractMaxLayerOutput(Net<float> &caffe_net, std::string img_path, cv::Mat&
 		}
 
 		iter++;
-		std::cout<<"extractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+		//std::cout<<"\rextractMaxLayerOutput: ["<<iter<<"/"<<img_num<<"]\n";
+		printf("\rextractMaxLayerOutput: [%d/%d]\r",iter,img_num);
+		fflush(stdout);
 	}
+	printf("\n");
 }
 
 void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& mean,  std::vector<LayerQuantData> &quant_data)
@@ -277,11 +258,7 @@ void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& me
 	double epsilon = 1.11e-16;
 	for (int i=0;i<quant_data.size();i++)
 	{
-		quant_data[i].distribution.interval = (double)(quant_data[i].distribution.max_output_value - quant_data[i].distribution.max_output_value) / (double)(INTERVAL_NUM-1);
-		if(quant_data[i].distribution.interval <= epsilon) {
-			std::cout<<"Warning: Dist "<<i<<" Layer has too narrow activation output width\n";
-			quant_data[i].distribution.interval = epsilon;
-		}
+		quant_data[i].distribution.interval = (double)(quant_data[i].distribution.max_output_value - quant_data[i].distribution.min_output_value) / (double)(INTERVAL_NUM-1) + epsilon;
 		for(int j=0;j<INTERVAL_NUM;j++)
 			quant_data[i].distribution.data[j] = 0;
 	}
@@ -322,7 +299,9 @@ void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& me
 
 
 	int iter = 0;
-	std::cout<<"ObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+//	std::cout<<"ObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+	printf("ObtainDistribution: [%d/%d]\r", iter, img_num);
+	fflush(stdout);
 	/*
 	BOOST_FOREACH(const fs::path& p, std::make_pair(fs::directory_iterator(path), fs::directory_iterator()))
 	{
@@ -359,18 +338,19 @@ void obtainDistribution(Net<float> &caffe_net, std::string img_path, cv::Mat& me
 			const float *data_array = blob->cpu_data();
 			for (int j=0;j<blob_size;j++, data_array++){
 				float data = *data_array;
-				//if (data<0) continue; //### have to do?
-				if(data==0.0) continue; // relu zero effect
+				if (data==0) continue; //### have to do?
 				//std::cout<<data<<" "<<((double)quant_data[i].distribution.max_output_value / (double)(INTERVAL_NUM-1))<<" "<<(int)((double)data * (double)(INTERVAL_NUM-1) / (double)quant_data[i].distribution.max_output_value)<<"\n";
-				int pon = (int)((((double)data) - quant_data[i].distribution.min_output_value)/((double)quant_data[i].distribution.interval));
-				quant_data[i].distribution.data[pon]++;
+				quant_data[i].distribution.data[(int)((double)(data - quant_data[i].distribution.min_output_value) * (double)(INTERVAL_NUM-1) / (double)(quant_data[i].distribution.max_output_value - quant_data[i].distribution.min_output_value))]++;
 				sum_count++;
 			}
 		}
 
 		iter++;
-		std::cout<<"ObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+		//std::cout<<"\rObtainDistribution: ["<<iter<<"/"<<img_num<<"]\n";
+		printf("\rObtainDistribution: [%d/%d]\r",iter,img_num);
+		fflush(stdout);
 	}
+	printf("\n");
 }
 
 void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &quant_data)
@@ -392,17 +372,20 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 
 		//quant_data[layer].distribution.data[0] = 0; //ReLU Zero Effect
 //		std::cout<<layer<<"/"<<quant_data.size()<<" layer active quantize\n";
-		int max_index = 0;
-		int min_index = 0;
-		double min_divergence = 0;
+		int max_index = -1;
+		int min_index = -1;
+		double min_divergence = -1;
 		double last = 0.0f;
 		double top = 0.0f;
 		for (int j=quantize_level;j<INTERVAL_NUM;j++){
 			last+=quant_data[layer].distribution.data[j];
 		}
 
-		for (int m = 0; m<INTERVAL_NUM-quantize_level; m++)
+		int zero_m = (double)quant_data[layer].distribution.min_output_value * (double)(quant_data[layer].distribution.min_output_value - quant_data[layer].distribution.max_output_value) / 2048.0f;
+		for (int m = 0; m<INTERVAL_NUM-quantize_level && m <= zero_m; m++)
 		{
+			printf("Activation Quantizing [%d/%d]: [%d/%d] - min_KLD: %lf          \r", layer, quant_data.size(), m, INTERVAL_NUM-quantize_level, min_divergence);
+			fflush(stdout);
 		for (int M = m+quantize_level; M<INTERVAL_NUM; M++)
 		{
 			Dist P, candidate_Q, Q;
@@ -428,21 +411,22 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 			for (int j=0;j<quantize_level;j++){ candidate_Q.data[j] = 0.0f; }
 
 			//int num_merged_bins = (double)(M-j) / (double)(quantize_level);
+			double div = 1.0f / (double)(M-m);
 			for (int k=0;k<m;k++) candidate_Q.data[0] += quant_data[layer].distribution.data[k];
 			for(int k=m;k<M;k++){
-				int pnt = (k-m)*quantize_level/(M-m);
+				int pnt = (k-m)*quantize_level * div; ///(M-m);
 				candidate_Q.data[pnt] += quant_data[layer].distribution.data[k];
 			}
-			for (int k=M;k<INTERVAL_NUM;k++) candidate_Q.data[quantize_level - 1] += quant_data[layer].distribution.data[k];
+			//for (int k=M;k<INTERVAL_NUM;k++) candidate_Q.data[quantize_level - 1] += quant_data[layer].distribution.data[k];
 			int st=0;
 			int norm = 0;
 			int l_pnt = 0;
 			for (int j=0;j<M-m;j++){
-				int pnt = j*128/(M-m);
+				int pnt = (int)((double)j*(double)quantize_level * div); ///(M-m);
 				if(pnt!=l_pnt) {
 					for(int k=st;k<j;k++) {
 						if(norm != 0 && P.data[k] != 0)
-							Q.data[k] = (double)candidate_Q.data[l_pnt] / (double)norm;
+							Q.data[k] = (double)candidate_Q.data[l_pnt] / norm;
 						else
 							Q.data[k] = 0;
 					}
@@ -450,12 +434,13 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 					st = j;
 				}
 				l_pnt = pnt;
-				if(P.data[j]!=0)
+				if(P.data[j]!=0) {
 					norm++;
+				}
 			}
 			for(int k=st;k<M-m;k++) {
 				if(norm != 0 && P.data[k] != 0)
-					Q.data[k] = (double)candidate_Q.data[l_pnt] / (double)norm;
+					Q.data[k] = (double)candidate_Q.data[l_pnt] / norm;
 				else
 					Q.data[k] = 0;
 			}
@@ -472,17 +457,26 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 			P.num = M-m;
 			Q.num = M-m;
 			
+
+			if(m==0) {/*
+			printf("%d - %d dist\n", m, M);
+			for(int ii=0;ii<M-m;ii++) 
+				printf("%5d ", (int)P.data[ii]);
+			printf("\n");
+			for(int ii=0;ii<M-m;ii++) 
+				printf("%5d ", (int)Q.data[ii]);
+			printf("\n");*/
+			}
+			
 			double divergence = estimateKLDivergence(P, Q, sum_P, sum_Q);
 
-			if (max_index == 0)
+			/*if (max_index == -1 || min_index == -1)
 			{
+				min_divergence = divergence;
 				max_index = M;
-			}
-			if (min_index == 0)
-			{
 				min_index = m;
-			}
-			if (divergence < min_divergence)
+			}*/
+			if (divergence < min_divergence || min_divergence < 0)
 			{
 				min_divergence = divergence;
 				max_index = M;
@@ -490,15 +484,22 @@ void computeActivationQuantize(Net<float> &caffe_net, std::vector<LayerQuantData
 			}
 		}
 		}
-		
+	/*	
+		printf("dist\n");
+		for(int ii=min_index;ii<max_index;ii++) {
+			printf("%d ", (int)quant_data[layer].distribution.data[ii]);
+		}
+		printf("\n");*/
 		double max_threshold = ((double)max_index + (double)0.5) * quant_data[layer].distribution.interval + quant_data[layer].distribution.min_output_value;
 		double min_threshold = ((double)min_index + (double)0.5) * quant_data[layer].distribution.interval + quant_data[layer].distribution.min_output_value;
 		if(min_threshold > 0) min_threshold = 0.0;
 
 		quant_data[layer].activation_scale_factor = (float)(quantize_level - 1) / (float)(max_threshold - min_threshold);
-		quant_data[layer].activation_zero_point = 255*(max_threshold+min_threshold)/(max_threshold-min_threshold)/2;
+		//quant_data[layer].activation_zero_point = 255.0f*(max_threshold+min_threshold)/(max_threshold-min_threshold)/2.0f;
+		quant_data[layer].activation_zero_point = (int)(255.0f*min_threshold/(min_threshold-max_threshold));
 
-		//std::cout << "Activation Quantizing" << ((quant_data[layer].winograd)?("(winograd)"):(":")) << "["<<layer<<"/"<<quant_data.size()<<"]: ";
+		printf("argM: %d argm: %d Tmax: %lf Tmin: %lf Distmin: %lf Divmin:%lf                                \n", max_index, min_index, max_threshold, min_threshold, quant_data[layer].distribution.min_output_value, min_divergence);
+		std::cout << "Activation Quantizing" << ((quant_data[layer].winograd)?("(winograd)"):(":")) << "["<<layer<<"/"<<quant_data.size()<<"]: "<<quant_data[layer].activation_scale_factor<<" "<<quant_data[layer].activation_zero_point<<"\n";	
 		//std::cout<<index<<"("<<min_divergence<<"), "<<quant_data[layer].activation_scale_factor<<"\n";
 	}
 }
@@ -531,26 +532,38 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 		//}
 
 		for (int j=0;j<weight->num();j++){
+			float min = 0.0;
 			float max = 0.0;
 			const float *data_array = weight->cpu_data() + (j * height*width*channels);
 			for (int r=0;r<height*width*channels;r++){
 				float data = *data_array;
-				if (max < abs(data)){
-					max = abs(data);
+				if (max < data){
+					max = data;
 				}
+				if (min > data){
+					min = data;
+				}
+				/*if(max<abs(data)) {
+					max = abs(data);
+				}*/
 				data_array++;
 			}
 			quant_data[i].weight_scale_factor.push_back(0);
-			if (max < 0.0001) {
+			quant_data[i].weight_zero_point.push_back(0);
+			if (max < 0.0001 /*&& min > -0.0001*/) {
 				quant_data[i].weight_scale_factor[j] = 0.0f;
 			}
 			else {
 				if(isWino){
-				   	quant_data[i].weight_scale_factor[j] = 31.0f / max;
+				//   	quant_data[i].weight_scale_factor[j] = 63.0f / (max-min);
 					//quant_data[i].weight_scale_factor[j] = 127.0f / max;
+				//	quant_data[i].weight_zero_point[j] = (int)(63.0f * min / (min-max));
 				}
 				else {
-					quant_data[i].weight_scale_factor[j] = 127.0f / max;
+					quant_data[i].weight_scale_factor[j] = 255.0f / (max-min);
+					quant_data[i].weight_zero_point[j] = (int)(255.0f * min / (min-max));
+			//		quant_data[i].weight_scale_factor[j] = 127.0f / max;
+			//		quant_data[i].weight_zero_point[j] = 128;
 				}
 			}
 		}
@@ -559,8 +572,9 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 			exit(0);
 		}
 		CHECK_EQ(quant_data[i].weight_scale_factor.size(), weight->num()) << "Weight scale factor num error: versus weight output num: "<<quant_data[i].weight_scale_factor.size()<<" vs "<<weight->num();
-		std::cout<<"Weight Quantizing" << ((isWino)?("(winograd)"):(":")) << "[" <<i<<"/"<<quant_data.size()<<"]: ";
-		std::cout<<quant_data[i].weight_scale_factor[0]<<", "<<quant_data[i].weight_scale_factor[weight->num()-1];
+		std::cout<<"Weight Quantizing" << ((isWino)?("(winograd)"):(":")) << "[" <<i<<"/"<<quant_data.size()<<"]: scale factor ";
+		std::cout<<quant_data[i].weight_scale_factor[0]<<",  zero_point ";
+		std::cout<<quant_data[i].weight_zero_point[0];
 		std::cout<<"\n";
 	}
 }
@@ -598,12 +612,15 @@ void SaveQuantizedModel(std::string src_model_path, std::vector<LayerQuantData> 
 			if ( !(net_param.layer(i).name().compare(quant_data[j].layer_name) == 0) ) continue;
 			LayerParameter* layer_param = net_param.mutable_layer(i);
 			layer_param->clear_activation_scale_factor();
+			layer_param->clear_activation_zero_point();
 			layer_param->clear_weight_scale_factor();
+			layer_param->clear_weight_zero_point();
 			
 			layer_param->set_activation_scale_factor(quant_data[j].activation_scale_factor);
 			layer_param->set_activation_zero_point(quant_data[j].activation_zero_point);
 			for (int k = 0; k < quant_data[j].weight_scale_factor.size(); k++) {
 				layer_param->add_weight_scale_factor(quant_data[j].weight_scale_factor[k]);
+				layer_param->add_weight_zero_point(quant_data[j].weight_zero_point[k]);
 			}
 
 			// Conv Weight Quantize
@@ -623,9 +640,10 @@ void SaveQuantizedModel(std::string src_model_path, std::vector<LayerQuantData> 
 			//std::cout<<blob->data_size()<<" "<<length<<" "<<quant_data[j].weight_scale_factor.size()<<"\n";
 			for (int k = 0; k < blob->data_size(); k++) {
 				float fp32_weight = blob->data(k);
-				float quantized_weight = (fp32_weight * quant_data[j].weight_scale_factor[k/length]);
+				float quantized_weight = (fp32_weight * quant_data[j].weight_scale_factor[k/length]) + quant_data[j].weight_zero_point[k/length];
 				if ( quantized_weight >= 0.f) quantized_weight += 0.5;
 				else quantized_weight -= 0.5;
+				//quantized_weight += quant_data[j].weight_zero_point[k/length];
 
 				/*if(quant_data[j].winograd){ // winograd
 					if ( quantized_weight > 31 ) {
@@ -636,14 +654,18 @@ void SaveQuantizedModel(std::string src_model_path, std::vector<LayerQuantData> 
 					}
 				}
 				else {*/
-					if ( quantized_weight > 127 ) {
-						quantized_weight = 127;
+					if ( quantized_weight > 255 ) {
+			//			printf("over error %lf\n", quantized_weight);;
+						quantized_weight = 255;
 					}
-					else if ( quantized_weight < -128 ) {
-						quantized_weight = -128;
+					else if ( quantized_weight < 0 ) {
+			//			printf("under error %lf = %lf*%lf + %d\n", quantized_weight, fp32_weight,  quant_data[j].weight_scale_factor[k/length], quant_data[j].weight_zero_point[k/length]);;
+						quantized_weight = 0;
 					}
 				//}
-				signed char int8_weight = (signed char)quantized_weight;
+				unsigned char int8_weight_u = quantized_weight;
+				//printf("%d ", int8_weight_u);
+				signed char int8_weight = int8_weight_u;
 				int8_data.push_back(int8_weight);
 
 				//std::cout<<(int)int8_weight<<" ";

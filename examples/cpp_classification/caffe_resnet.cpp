@@ -98,8 +98,9 @@ int matchlabel[1200];
 
 int main(int argc, char** argv)
 {
-	if(argc!=3){
+	if(argc>4 || argc<3){
 		std::cout<<"parameter error\n";
+		exit(0);
 	}
 	std::string deploy(argv[1]);
 	std::string model(argv[2]);
@@ -108,7 +109,10 @@ int main(int argc, char** argv)
 	//std::string file_name("/home/abab2365/workspace/data/images/test/ILSVRC2012_val_");
 	int num_images = 50000;
 
-	Caffe::set_mode(Caffe::CPU);
+	if(argc==4)
+		Caffe::set_mode(Caffe::GPU);
+	else
+		Caffe::set_mode(Caffe::CPU);
 	Net<float> caffe_net(deploy, caffe::TEST);
 	caffe_net.CopyTrainedLayersFrom(model);
 
@@ -172,6 +176,7 @@ int main(int argc, char** argv)
 	int image_count = 0;
 	int predict_count = 0;
 	int top5_count = 0;
+	double avg_time = 0.0;
 	for(int i=1;i<num_images;i++){
 		if(truth[i]==-1) continue; // validatoin label is vaild when truth != -1
 		char imsg[200];
@@ -194,7 +199,8 @@ int main(int argc, char** argv)
     	caffe_net.Forward();
 		gettimeofday(&tend, NULL);
 		timersub(&tend, &tstart, &tres);
-		printf("time: %f", tres.tv_sec*1000.0 + tres.tv_usec/1000.0);
+//		printf("time: %f", tres.tv_sec*1000.0 + tres.tv_usec/1000.0);
+		avg_time += tres.tv_sec*1000.0 + tres.tv_usec/1000.0;
 
 		Blob<float>* output_layer = caffe_net.output_blobs()[0];
 		const float* begin = output_layer->cpu_data();
@@ -206,7 +212,7 @@ int main(int argc, char** argv)
 			if(out[j] > out[max]) max = j;
 		}*/
 		//std::cout<<"\n"<<max<<" "<<out[max]<<"\n";
-		std::cout<<"\n";
+//		std::cout<<"\n";
 		std::vector<int> maxN = Argmax(out, 5);
 		for(int ii=0;ii<5;ii++) {
 			if(maxN[ii]==truth[i]) {
@@ -220,12 +226,13 @@ int main(int argc, char** argv)
 			predict_count++;
 		}
 		image_count++;
-		printf("top-1 predict rate: %lf\n", (double)predict_count / image_count);
-		printf("top-5 predict rate: %lf\n", (double)top5_count / image_count);
+//		printf("top-1 predict rate: %lf\n", (double)predict_count / image_count);
+//		printf("top-5 predict rate: %lf\n", (double)top5_count / image_count);
 
 		if(image_count%100==0){
 			printf("%d: top-1 predict rate: %lf\n", image_count, (double)predict_count / image_count);
 			printf("%d: top-5 predict rate: %lf\n", image_count, (double)top5_count / image_count);
+			printf("%d: avg time: %f\n", image_count, avg_time / image_count);
 		}
 	}
 

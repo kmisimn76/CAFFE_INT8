@@ -13,12 +13,18 @@
 namespace caffe {
 
 //INT8 Edited
-void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C);
+void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C, char* B_T);
+void sblas_asymm_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C, char* B_T);
 void sblas_intgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const int alpha, const int* A, const float* B, const int beta, int* C);
-void caffe_cpu_gemm(const CBLAS_TRANSPOSE TransA,
+void caffe_cpu_asymm_offset(const char* in_c, const char* w_c, int* out, const unsigned char in_offset, const unsigned char* w_offset, int M, int N, int K);
+void caffe_cpu_cgemm(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
     const char alpha, const char* A, const char* B, const char beta,
-    int* C);
+    int* C, char* B_T);
+void caffe_cpu_asymm_cgemm(const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+    const char alpha, const char* A, const char* B, const char beta,
+    int* C, char* B_T);
 template <typename Dtype>
 void caffe_cpu_igemm(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,

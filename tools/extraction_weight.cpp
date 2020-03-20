@@ -85,10 +85,10 @@ int main(int argc, char** argv) {
 				const signed char* data_array = (const signed char*)weight->cpu_data();
 
 				fwrite(shape, sizeof(int), 4, f);
-				printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
+				//printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
 				fwrite(data_array, sizeof(signed char), shape[0]*shape[1]*shape[2]*shape[3], f);
 				for(int jj=0;jj<shape[0]*shape[1]*shape[2]*shape[3];jj++) {
-					printf("%c ", data_array[jj]);
+					//printf("%c ", data_array[jj]);
 				}
 			}
 			printf("\n");
@@ -99,10 +99,10 @@ int main(int argc, char** argv) {
 				const int* data_array = (const int*)weight->cpu_data();
 
 				fwrite(shape, sizeof(int), 4, f);
-				printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
+				//printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
 				fwrite(data_array, sizeof(int), shape[0]*shape[1]*shape[2]*shape[3], f);
 				for(int jj=0;jj<shape[0]*shape[1]*shape[2]*shape[3];jj++) {
-					printf("%d ", data_array[jj]);
+					//printf("%d ", data_array[jj]);
 				}
 			}
 			printf("\n");
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
 			int num_blobs = 0;
 			if(strcmp(layer_type, "Convolution")==0) num_blobs = (caffe_net.layers()[i]->layer_param().convolution_param().bias_term())?(2):(1);
 			fwrite((&(tmp=num_blobs)), sizeof(int), 1, f);
-			printf("%ld\n", num_blobs);
+//			printf("%ld\n", num_blobs);
 			for(int j=0;j<num_blobs; j++)
 			{
 				Blob<float>* weight = caffe_net.layers()[i].get()->blobs()[j].get();
@@ -142,13 +142,13 @@ int main(int argc, char** argv) {
 				const float* data_array = weight->cpu_data();
 
 				fwrite(shape, sizeof(int), 4, f);
-				printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
+//				printf("%d %d %d %d ", shape[0], shape[1], shape[2], shape[3]);
 				fwrite(data_array, sizeof(float), shape[0]*shape[1]*shape[2]*shape[3], f);
 				for(int jj=0;jj<shape[0]*shape[1]*shape[2]*shape[3];jj++) {
-					printf("%f ", data_array[jj]);
+//					printf("%f ", data_array[jj]);
 				}
 			}
-			printf("\n");
+//			printf("\n");
 		}
 	}
 	fclose(f);

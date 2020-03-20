@@ -52,6 +52,7 @@ class Layer {
 	  }else {
 		  int8_inference_ = false;
 	  }
+	  int8_symmetric_ = true;
 	  
       phase_ = param.phase();
       if (layer_param_.blobs_size() > 0) {
@@ -80,11 +81,12 @@ class Layer {
 	  
 	  //INT8 Edited
 	  // Load scale factor from text proto
-	  if (param.has_activation_scale_factor() == true) {
+	  /*if (param.has_activation_scale_factor() == true) {
 		  activation_scale_factor_ = param.activation_scale_factor();
 	  }
-	  if (param.has_activation_zero_point() == true) {
+	  if (param.has_activation_zero_point() == true && param.activation_zero_point() >= 0) {
 		  activation_zero_point_ = param.activation_zero_point();
+		  int8_symmetric_ = false;
 	  }
 	  if (param.weight_scale_factor_size() > 0) {
 		  weight_scale_factor_.reserve(param.weight_scale_factor_size());
@@ -93,7 +95,7 @@ class Layer {
 			  printf("%lf ", weight_scale_factor_[i]);
 		  }
 		  printf("\n");
-	  }
+	  }*/
     }
   virtual ~Layer() {}
 
@@ -214,14 +216,20 @@ class Layer {
   bool int8_inference() {
 	  return int8_inference_;
   }
+  bool& int8_symmetric() {
+	  return int8_symmetric_;
+  }
   Dtype& activation_scale_factor() {
 	  return activation_scale_factor_;
   }
-  char& activation_zero_point() {
+  unsigned char& activation_zero_point() {
 	  return activation_zero_point_;
   }
   vector<Dtype>& weight_scale_factor() {
 	  return weight_scale_factor_;
+  }
+  vector<unsigned char>& weight_zero_point() {
+	  return weight_zero_point_;
   }
 
   //INT8 Edited
@@ -385,10 +393,12 @@ class Layer {
 
   //INT8 Edited
   bool int8_inference_;
+  bool int8_symmetric_;
   /** INT8 Inference Scale Factors */
   Dtype activation_scale_factor_;
-  char activation_zero_point_;
+  unsigned char activation_zero_point_;
   vector<Dtype> weight_scale_factor_;
+  vector<unsigned char> weight_zero_point_;
   
   //INT8 Edited
   /** INT8 Weight blob */
@@ -538,7 +548,7 @@ class Layer {
 // Forward and backward wrappers. You should implement the cpu and
 // gpu specific implementations instead, and should not change these
 // functions.
-template <typename Dtype>
+/*template <typename Dtype>
 inline Dtype Layer<Dtype>::Forward(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
   Dtype loss = 0;
@@ -623,7 +633,7 @@ inline Dtype Layer<Dtype>::Forward(const vector<Blob<Dtype>*>& bottom,
   }
   return loss;
 }
-
+*/
 template <typename Dtype>
 inline void Layer<Dtype>::Backward(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down,
@@ -650,7 +660,7 @@ void Layer<Dtype>::ToProto(LayerParameter* param, bool write_diff) {
     blobs_[i]->ToProto(param->add_blobs(), write_diff);
   }
 }
-
+/*
 //INT8 Edited
 // TODO: use ACL
 // Quantization bottom blobs in CPU
@@ -659,20 +669,39 @@ void Layer<Dtype>::Quantization_int8(const vector<Blob<Dtype>*>& bottom,
 		  const vector<Blob<char>*>& bottom_int8) {
 	for (int n = 0; n < bottom.size(); n++) {
 		const Dtype* bottom_data = bottom[n]->cpu_data();
-		char* int8_data = bottom_int8[n]->mutable_cpu_data();
-		const int count = bottom[n]->count();
-		float res;
-		for (int i = 0; i < count; ++i) {
-			res = (bottom_data[i] * activation_scale_factor_);
-			if (res>=0.f) res += 0.5;
-			else res -= 0.5;
+		if(int8_symmetric_) {
+			signed char* int8_data = (signed char*)(bottom_int8[n]->mutable_cpu_data());
+			const int count = bottom[n]->count();
+			float res;
+			for (int i = 0; i < count; ++i) {
+				res = (bottom_data[i] * activation_scale_factor_);
+				if (res>=0.f) res += 0.5;
+				else res -= 0.5;
 
-			if (res>127)
-				int8_data[i] = 127;
-			else if (res<-128)
-				int8_data[i] = -128;
-			else
-				int8_data[i] = (char)res;
+				if (res>127)
+					int8_data[i] = 127;
+				else if (res<-128)
+					int8_data[i] = -128;
+				else
+					int8_data[i] = (signed char)res;
+			}
+		}
+		else {
+			unsigned char* int8_data = (unsigned char*)(bottom_int8[n]->mutable_cpu_data());
+			const int count = bottom[n]->count();
+			float res;
+			for (int i = 0; i < count; ++i) {
+				res = (bottom_data[i] * activation_scale_factor_) + activation_zero_point_;
+				if (res>=0.f) res += 0.5;
+				else res -= 0.5;
+
+				if (res>255)
+					int8_data[i] = 255;
+				else if (res<0)
+					int8_data[i] = 0;
+				else
+					int8_data[i] = (unsigned char)res;
+			}
 		}
 	}
 }
@@ -715,7 +744,7 @@ void Layer<Dtype>::Dequantization_int8_gpu(const vector<Blob<int>*>& top_int,
 		  const vector<Blob<Dtype>*>& top) {
 	Dequantization_int8(top_int, top);
 }
-
+*/
 
 }  // namespace caffe
 

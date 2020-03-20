@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include "caffe/layers/conv_layer.hpp"
+#include <unistd.h>
+#include <sys/time.h>
 
 namespace caffe {
 
@@ -82,24 +84,40 @@ void ConvolutionLayer<Dtype>::Forward_int8_cpu(const vector<Blob<char>*>& bottom
 		printf("warning ! : bottom size: %ld != 1\n", bottom.size());
 		sleep(10);
 	}
-	for (int i = 0; i < bottom.size(); i++) {
-		const char* bottom_data = bottom[i]->cpu_data();
-		int* top_data = top[i]->mutable_cpu_data();
-		for (int n = 0; n < this->num_; n++) {
-			// src/caffe/layers/base_conv_layer.cpp
-			this->forward_cpu_gemm_int8_conv(bottom_data + n * this->bottom_dim_, weight,
-				top_data + n * this->top_dim_);
-		    if (this->bias_term_) {
-		      const int* bias = this->int_blobs_[0]->cpu_data();
-		      this->forward_cpu_int_bias(top_data + n * this->top_dim_, bias);
-		    }
+	if (this->int8_symmetric_) { //symmetric
+		for (int i = 0; i < bottom.size(); i++) {
+			const char* bottom_data = bottom[i]->cpu_data();
+			int* top_data = top[i]->mutable_cpu_data();
+			for (int n = 0; n < this->num_; n++) {
+				// src/caffe/layers/base_conv_layer.cpp
+				this->forward_cpu_gemm_int8_conv(bottom_data + n * this->bottom_dim_, weight,
+					top_data + n * this->top_dim_);
+				if (this->bias_term_) {
+				  const int* bias = this->int_blobs_[0]->cpu_data();
+				  this->forward_cpu_int_bias(top_data + n * this->top_dim_, bias);
+				}
+			}
 		}
 	}
-
+	else { //asymmetric
+		for (int i = 0; i < bottom.size(); i++) {
+			const char* bottom_data = bottom[i]->cpu_data();
+			int* top_data = top[i]->mutable_cpu_data();
+			for (int n = 0; n < this->num_; n++) {
+				// src/caffe/layers/base_conv_layer.cpp
+				this->forward_cpu_asymm_gemm_int8_conv(bottom_data + n * this->bottom_dim_, weight,
+					top_data + n * this->top_dim_);
+				if (this->bias_term_) {
+				  const int* bias = this->int_blobs_[0]->cpu_data();
+				  this->forward_cpu_int_bias(top_data + n * this->top_dim_, bias);
+				}
+			}
+		}
+	}
 #define PRINT_INT8_LOG
 #ifdef PRINT_INT8_LOG
-	char filename[100];
-/*
+/*	char filename[100];
+
 	FILE* csv = fopen("num.csv", "r");
 	int nu = -1;
 	char np[100];

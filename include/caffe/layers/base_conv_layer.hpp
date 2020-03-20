@@ -36,6 +36,8 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   //INT8 Edited
   void forward_cpu_gemm_int8_conv(const char* input,
     const char* weights, int* output, bool skip_im2col = false);
+  void forward_cpu_asymm_gemm_int8_conv(const char* input,
+    const char* weights, int* output, bool skip_im2col = false);
   void forward_cpu_int_bias(int* output, const int* bias);
 
   void forward_cpu_gemm(const Dtype* input, const Dtype* weights,
@@ -102,7 +104,7 @@ class BaseConvolutionLayer : public Layer<Dtype> {
  private:
   	
   	//INT8 Edited
-	inline void conv_im2col_cpu_int8_conv(const char* data, char* col_buff) {
+	inline void conv_im2col_cpu_int8_conv(const char* data, char* col_buff, int val=0) {
 		if (!force_nd_im2col_ && num_spatial_axes_ == 2) {
 			// src/caffe/util/math_functions.h
 			im2col_cpu(data, conv_in_channels_,
@@ -110,7 +112,7 @@ class BaseConvolutionLayer : public Layer<Dtype> {
 				kernel_shape_.cpu_data()[0], kernel_shape_.cpu_data()[1],
 				pad_.cpu_data()[0], pad_.cpu_data()[1],
 				stride_.cpu_data()[0], stride_.cpu_data()[1],
-				dilation_.cpu_data()[0], dilation_.cpu_data()[1], col_buff);
+				dilation_.cpu_data()[0], dilation_.cpu_data()[1], col_buff, val);
 		} else {
 			// src/caffe/util/math_functions.h
 			im2col_nd_cpu(data, num_spatial_axes_, conv_input_shape_.cpu_data(),

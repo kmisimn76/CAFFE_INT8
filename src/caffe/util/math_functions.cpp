@@ -1,3 +1,4 @@
+
 #include <boost/math/special_functions/next.hpp>
 #include <boost/random.hpp>
 
@@ -7,27 +8,1190 @@
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/rng.hpp"
 
+#include <unistd.h>
+#include <sys/time.h>
+
+//#include <immintrin.h>
+//#include <pmmintrin.h>
+
+#include <boost/thread.hpp>
+
+//#define AAA
+#define BBB
 namespace caffe {
 
-//INT8 Edited
+	/*
 void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C) {
+			struct timeval start, end, res;
 	int* C_data = C;
+	const char* A_data;
+	const char* B_data;
+	printf("%d %d %d\n", M, N, K);
+			gettimeofday(&start, NULL);
+	const char* A_d = A-K;
+	const char* B_d;
+	char* B_t;
+	//B_Transpose
+	B_data = B;
+	for(int i = 0; i < K; i++) {
+		B_t = &B_T[0]+i;
+		for(int j = 0; j < N; j++) {
+			*B_t = *B_data;
+			B_t+=K;
+			B_data++;
+		}
+	}
 	for(int i = 0; i < M; i++){
-		for(int j = 0; j < N; j++){
-			const char* A_data = A + K*i;
-			const char* B_data = B + j;
+		int j;
+		A_d += K;
+
+		B_data = B_T;
+		for(j=0; j < N-4; j+=4){
+			A_data = A_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K))2
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
 			int acc = 0;
-			for(int k = 0; k < K; k++){
-				acc += (*A_data) * (*B_data);
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}
+
+		/*
+		B_d = B;
+		for(j = 0; j < N-4; j+=4){
+			A_data = A_d;
+			B_data = B_d;
+			B_d+=4;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k!=0 ; k--){
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+1));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3));
+
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+N));
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+N+1));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+N+2));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+N+3));
+
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2*N));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2*N+1));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2*N+2));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2*N+3));
+
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3*N));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3*N+1));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3*N+2));
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3*N+3));
+	
+				A_data+=4;
+				B_data += N*4;
+			}
+			
+#ifndef FAST_APPX
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+1));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3));
 				A_data++;
 				B_data += N;
+			}
+#endif
+			(*C_data) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+		}/
+		for(; j < N; j++){
+			A_data = A_d;
+			B_data = B_d;
+			B_d++;
+			int acc = 0;
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+N));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2*N));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3*N));
+				A_data+=4;
+				B_data += N*4;
+			}
+			for(;k<K;k++) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data += N;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}*/
+/*	}
+}
+*/
+//#define FAST_APPX
+//INT8 Edited
+#ifdef AAA
+/*char B_T[10000000];
+void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C) {
+	int* C_data = C;
+	const char* A_data;
+	const char* B_data;
+	const char* A_d = A;
+	const char* B_d;
+	char* B_t;
+	//B_Transpose
+	B_data = B;
+	int i=0;
+	for(; i < K; i++) {
+		B_t = &B_T[0]+i;
+		for(int j = 0; j < N; j++) {
+			*B_t = *B_data;
+			B_t+=K;
+			B_data++;
+		}
+	}
+
+	i=0;
+*/
+/*	for(; i < M-2; i+=2){
+		int j;
+		B_data = B_T;
+		for(j=0; j < N-4; j+=4){
+			A_data = A_d;
+			int acc00 = 0;
+		int acc01 = 0;
+			int acc02 = 0;
+			int acc03 = 0;
+			int acc10 = 0;
+			int acc11 = 0;
+			int acc12 = 0;
+			int acc13 = 0;
+
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc01 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc01 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc01 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc02 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc02 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc02 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc03 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+				acc03 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+				acc03 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc11 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+K));
+				acc11 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+K));
+				acc11 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+K));
+
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc12 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+2*K));
+				acc12 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+2*K));
+				acc12 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+2*K));
+
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+				acc13 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+3*K));
+				acc13 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+3*K));
+				acc13 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+1)) = acc01;
+			(*(C_data+2)) = acc02;
+			(*(C_data+3)) = acc03;
+			
+			(*(C_data+N)) = acc10;
+			(*(C_data+N+1)) = acc11;
+			(*(C_data+N+2)) = acc12;
+			(*(C_data+N+3)) = acc13;
+
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc00 = 0;
+			int acc10 = 0;
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*(A_data)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+N)) = acc10;
+			C_data++;
+		}
+		C_data+=N;
+		A_d += K*2;
+	}*/ //original except
+/*
+	for(; i < M; i++){
+
+		B_data = B_T;
+
+		int j=0;
+		for(; j < N-4; j+=4){
+			A_data = A_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc0 += (short)(*A_data) * (short)(*B_data);
+
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k != 0;k--) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}
+		A_d += K;
+	}
+}*/
+#endif
+#ifdef BBB
+inline int _ceil(int a, int b) {
+	return (a-1)/b + 1;
+}
+void sblas_igemm_general(const char* A, const char* B, int* C, int M, int N, int K) {
+	int* C_data = C;
+	const char* A_data;
+	const char* B_data;
+	const char* A_d = A;
+	const char* B_d;
+	char* B_t;
+	//B_Transpose
+	int i=0;
+
+	i=0;
+
+	for(; i < M-2; i+=2){
+		int j;
+		B_data = B;
+		for(j=0; j < N-4; j+=4){
+			A_data = A_d;
+			int acc00 = 0;
+		int acc01 = 0;
+			int acc02 = 0;
+			int acc03 = 0;
+			int acc10 = 0;
+			int acc11 = 0;
+			int acc12 = 0;
+			int acc13 = 0;
+
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc01 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc01 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc01 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc02 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc02 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc02 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc03 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+				acc03 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+				acc03 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc11 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+K));
+				acc11 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+K));
+				acc11 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+K));
+
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc12 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+2*K));
+				acc12 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+2*K));
+				acc12 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+2*K));
+
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+				acc13 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+3*K));
+				acc13 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+3*K));
+				acc13 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+1)) = acc01;
+			(*(C_data+2)) = acc02;
+			(*(C_data+3)) = acc03;
+			
+			(*(C_data+N)) = acc10;
+			(*(C_data+N+1)) = acc11;
+			(*(C_data+N+2)) = acc12;
+			(*(C_data+N+3)) = acc13;
+
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc00 = 0;
+			int acc10 = 0;
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*(A_data)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+N)) = acc10;
+			C_data++;
+		}
+		C_data+=N;
+		A_d += K*2;
+	}
+
+	for(; i < M; i++){
+
+		B_data = B;
+
+		int j=0;
+		for(; j < N-4; j+=4){
+			A_data = A_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc0 += (short)(*A_data) * (short)(*B_data);
+
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k != 0;k--) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}
+		A_d += K;
+	}
+}
+#define THREADN 8
+void accum(const char* A, const char* B, int* C, int M, int N, int K, int m)
+{
+	const char* A_data;
+	const char* A_d;
+	const char* B_data;
+	int* C_data;
+	int i;
+	int start = m*_ceil(M,THREADN), end = (m+1)*_ceil(M,THREADN);
+	if(M<end) end = M;
+	for(i=start;i<end; i++) {
+		A_d = A + i*K;
+		B_data = B;
+		C_data = C + i*N;
+		int j=N>>2;
+		for(; j != 0; j--){
+			A_data = A_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k != 0;k--) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_data+=3*K;
+		}
+		j=N-((N>>2)<<2);
+		for(; j != 0; j--){
+			A_data = A_d;
+			int acc = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data ++;
 			}
 			(*C_data) = acc;
 			C_data++;
 		}
 	}
 }
+void accum_b(const char* A, const char* B, int* C, int M, int N, int K, int n)
+{
+	int Nt = (n+1)*_ceil(N,THREADN);
+	int tmpj = n*_ceil(N,THREADN);
+	if(N<Nt) Nt = N;
 
+	for(int m=0;m<M;m++) {
+	const char* A_data = A + m*K;
+	const char* A_d = A_data;
+	const char* B_data;
+	int* C_data;
+	int i;
+	int j = tmpj;
+	B_data = B + j*K;
+	C_data = C + m*N + j;
+	for(; j < Nt-3; j+=4){
+		A_data = A_d;
+		int acc0 = 0;
+		int acc1 = 0;
+		int acc2 = 0;
+		int acc3 = 0;
+		int k=K>>2;
+		for(; k != 0; k--){
+			acc0 += (short)(*A_data) * (short)(*B_data);
+			acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+			acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+			acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+			acc1 += (short)(*A_data) * (short)(*(B_data+K));
+			acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+			acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+			acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+			acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+			acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+			acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+			acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+			acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+			acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+			acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+			acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+			A_data+=4;
+			B_data+=4;
+		}
+		k=K-((K>>2)<<2);
+		for(;k != 0;k--) {
+			acc0 += (short)(*A_data) * (short)(*B_data);
+			acc1 += (short)(*A_data) * (short)(*(B_data+K));
+			acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+			acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+			A_data++;
+			B_data++;
+		}
+		(*(C_data)) = acc0;
+		(*(C_data+1)) = acc1;
+		(*(C_data+2)) = acc2;
+		(*(C_data+3)) = acc3;
+		C_data+=4;
+		B_data+=3*K;
+	}
+	for(; j < Nt; j++){
+		A_data = A_d;
+		int acc = 0;
+		int k=K>>2;
+		for(; k != 0; k--){
+			acc += (short)(*A_data) * (short)(*B_data);
+			acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+			acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+			acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+			A_data+=4;
+			B_data+=4;
+		}
+		k=K-((K>>2)<<2);
+		for(;k!=0;k--) {
+			acc += (short)(*A_data) * (short)(*B_data);
+			A_data++;
+			B_data++;
+		}
+		(*C_data) = acc;
+		C_data++;
+	}
+	}
+}
+
+//char B_T[10000000];
+boost::thread t[THREADN+1];
+void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C, char *B_T) {
+	const char* B_data;
+	char* B_t;
+	//B_Transpose
+	B_data = B;
+	int i=0;
+	for(; i < K; i++) {
+		B_t = B_T+i;
+		for(int j = 0; j < N; j++) {
+			*B_t = *B_data;
+			B_t+=K;
+			B_data++;
+		}
+	}
+
+//	i=0;
+
+	if(M==1) {
+		sblas_igemm_general(A, B_T, C, M, N, K);
+	}
+	else if(M>=THREADN) {
+		for(i=0; i < THREADN; i++){
+			t[i] = boost::thread{accum, A, B_T, C, M, N, K, i};
+		}
+		for(i=0; i < THREADN; i++){
+			t[i].join();
+		}
+	}
+	else if(N>=THREADN){
+		int j;
+		for(j=0; j < THREADN; j++){
+			t[j] = boost::thread{accum_b, A, B_T, C, M, N, K, j};
+		}
+		for(j=0; j < THREADN; j++){
+			t[j].join();
+		}
+	}
+	else {
+		sblas_igemm_general(A, B_T, C, M, N, K);
+	}
+}
+#endif
+
+void sblas_asymm_igemm_general(const unsigned char* A, const unsigned char* B, int* C, int M, int N, int K) {
+	int* C_data = C;
+	const unsigned char* A_data;
+	const unsigned char* B_data;
+	const unsigned char* A_d = A;
+	const unsigned char* B_d;
+	//B_Transpose
+	int i=0;
+
+	i=0;
+
+	for(; i < M-2; i+=2){
+		int j;
+		B_data = B;
+		for(j=0; j < N-4; j+=4){
+			A_data = A_d;
+			int acc00 = 0;
+		int acc01 = 0;
+			int acc02 = 0;
+			int acc03 = 0;
+			int acc10 = 0;
+			int acc11 = 0;
+			int acc12 = 0;
+			int acc13 = 0;
+
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc01 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc01 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc01 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc02 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc02 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc02 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc03 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+				acc03 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+				acc03 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc11 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+K));
+				acc11 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+K));
+				acc11 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+K));
+
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc12 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+2*K));
+				acc12 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+2*K));
+				acc12 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+2*K));
+
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+				acc13 += (short)(*(A_data+K+1)) * (short)(*(B_data+1+3*K));
+				acc13 += (short)(*(A_data+K+2)) * (short)(*(B_data+2+3*K));
+				acc13 += (short)(*(A_data+K+3)) * (short)(*(B_data+3+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc01 += (short)(*A_data) * (short)(*(B_data+K));
+				acc02 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc03 += (short)(*A_data) * (short)(*(B_data+3*K));
+				
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc11 += (short)(*(A_data+K)) * (short)(*(B_data+K));
+				acc12 += (short)(*(A_data+K)) * (short)(*(B_data+2*K));
+				acc13 += (short)(*(A_data+K)) * (short)(*(B_data+3*K));
+
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+1)) = acc01;
+			(*(C_data+2)) = acc02;
+			(*(C_data+3)) = acc03;
+			
+			(*(C_data+N)) = acc10;
+			(*(C_data+N+1)) = acc11;
+			(*(C_data+N+2)) = acc12;
+			(*(C_data+N+3)) = acc13;
+
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc00 = 0;
+			int acc10 = 0;
+			int k=0;
+			for(; k < K-4; k+=4){
+				acc00 += (short)(*A_data) * (short)(*B_data);
+				acc00 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc00 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc00 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K+1)) * (short)(*(B_data+1));
+				acc10 += (short)(*(A_data+K+2)) * (short)(*(B_data+2));
+				acc10 += (short)(*(A_data+K+3)) * (short)(*(B_data+3));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			for(;k<K;k++) {
+				acc00 += (short)(*(A_data)) * (short)(*B_data);
+				acc10 += (short)(*(A_data+K)) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*(C_data)) = acc00;
+			(*(C_data+N)) = acc10;
+			C_data++;
+		}
+		C_data+=N;
+		A_d += K*2;
+	}
+
+	for(; i < M; i++){
+
+		B_data = B;
+
+		int j=0;
+		for(; j < N-4; j+=4){
+			A_data = A_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc3 += (short)(*(A_data+3)) * (short)(*(B_data+3+3*K));
+				acc2 += (short)(*(A_data+3)) * (short)(*(B_data+3+2*K));
+				acc1 += (short)(*(A_data+3)) * (short)(*(B_data+3+K));
+				acc0 += (short)(*(A_data+3)) * (short)(*(B_data+3));
+
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc0 += (short)(*A_data) * (short)(*B_data);
+
+				acc0 += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc1 += (short)(*(A_data+1)) * (short)(*(B_data+1+K));
+				acc2 += (short)(*(A_data+1)) * (short)(*(B_data+1+2*K));
+				acc3 += (short)(*(A_data+1)) * (short)(*(B_data+1+3*K));
+
+				acc0 += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc1 += (short)(*(A_data+2)) * (short)(*(B_data+2+K));
+				acc2 += (short)(*(A_data+2)) * (short)(*(B_data+2+2*K));
+				acc3 += (short)(*(A_data+2)) * (short)(*(B_data+2+3*K));
+
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k != 0;k--) {
+				acc0 += (short)(*A_data) * (short)(*B_data);
+				acc1 += (short)(*A_data) * (short)(*(B_data+K));
+				acc2 += (short)(*A_data) * (short)(*(B_data+2*K));
+				acc3 += (short)(*A_data) * (short)(*(B_data+3*K));
+				A_data++;
+				B_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_data+=3*K;
+		}
+		for(; j < N; j++){
+			A_data = A_d;
+			int acc = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc += (short)(*A_data) * (short)(*B_data);
+				acc += (short)(*(A_data+1)) * (short)(*(B_data+1));
+				acc += (short)(*(A_data+2)) * (short)(*(B_data+2));
+				acc += (short)(*(A_data+3)) * (short)(*(B_data+3));
+				A_data+=4;
+				B_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc += (short)(*A_data) * (short)(*B_data);
+				A_data++;
+				B_data ++;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}
+		A_d += K;
+	}
+}
+
+void sblas_asymm_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C, char *B_T) {
+	const char* B_data;
+	char* B_t;
+	//B_Transpose
+	B_data = B;
+	int i=0;
+	for(; i < K; i++) {
+		B_t = B_T+i;
+		for(int j = 0; j < N; j++) {
+			*B_t = *B_data;
+			B_t+=K;
+			B_data++;
+		}
+	}
+
+	sblas_asymm_igemm_general((unsigned char*)A, (unsigned char*)B_T, C, M, N, K);
+}
+/*
+__attribute__ ((aligned(16))) int A_T[10000000];
+__attribute__ ((aligned(16))) int B_T[10000000];
+void sblas_igemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const char alpha, const char* A, const char* B, const char beta, int* C) {
+			struct timeval start, end, res;
+	int* C_data = C;
+	const char* A_data;
+	const char* B_data;
+	printf("%d %d %d\n", M, N, K);
+			gettimeofday(&start, NULL);
+	const char* A_d = A;
+	const char* B_d;
+	int* A_t_data;
+	int* B_t_data;
+	int* A_t;
+	int* B_t;
+	int* A_t_d = A_T;
+	int* B_t_d;
+	//B_Transpose
+	B_data = B;
+	int i=0;
+	for(; i < K; i++) {
+		B_t = &B_T[0]+i;
+		for(int j = 0; j < N; j++) {
+			*B_t = *B_data;
+			B_t+=K;
+			B_data++;
+		}
+	}
+	A_data = A;
+	A_t = &A_T[0];
+	i=0;
+	for(; i < M; i++) {
+		for(int j = 0; j < K; j++) {
+			*A_t = *A_data;
+			A_t++;
+			A_data++;
+		}
+	}
+
+	i=0;
+	for(; i < M; i++){
+
+		B_t_data = B_T;
+
+		int j=N>>2;
+		for(; j != 0; j--){
+			A_t_data = A_t_d;
+			int acc0 = 0;
+			int acc1 = 0;
+			int acc2 = 0;
+			int acc3 = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				__m128i va, vb, vc;
+				va = _mm_store_si128((__m128i *)A_t_data);
+				vb = _mm_store_si128((__m128i *)B_t_data);
+//				vc = _mm_multi_*/
+/*				acc0 += (short)(*A_t_data) * (short)(*B_t_data);
+				acc0 += (short)(*(A_t_data+1)) * (short)(*(B_t_data+1));
+				acc0 += (short)(*(A_t_data+2)) * (short)(*(B_t_data+2));
+				acc0 += (short)(*(A_t_data+3)) * (short)(*(B_t_data+3));
+
+				acc1 += (short)(*A_t_data) * (short)(*(B_t_data+K));
+				acc1 += (short)(*(A_t_data+1)) * (short)(*(B_t_data+1+K));
+				acc1 += (short)(*(A_t_data+2)) * (short)(*(B_t_data+2+K));
+				acc1 += (short)(*(A_t_data+3)) * (short)(*(B_t_data+3+K));
+
+				acc2 += (short)(*A_t_data) * (short)(*(B_t_data+2*K));
+				acc2 += (short)(*(A_t_data+1)) * (short)(*(B_t_data+1+2*K));
+				acc2 += (short)(*(A_t_data+2)) * (short)(*(B_t_data+2+2*K));
+				acc2 += (short)(*(A_t_data+3)) * (short)(*(B_t_data+3+2*K));
+
+				acc3 += (short)(*A_t_data) * (short)(*(B_t_data+3*K));
+				acc3 += (short)(*(A_t_data+1)) * (short)(*(B_t_data+1+3*K));
+				acc3 += (short)(*(A_t_data+2)) * (short)(*(B_t_data+2+3*K));
+				acc3 += (short)(*(A_t_data+3)) * (short)(*(B_t_data+3+3*K));
+*/
+/*				A_t_data+=4;
+				B_t_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k != 0;k--) {
+				acc0 += (short)(*A_t_data) * (short)(*B_t_data);
+				acc1 += (short)(*A_t_data) * (short)(*(B_t_data+K));
+				acc2 += (short)(*A_t_data) * (short)(*(B_t_data+2*K));
+				acc3 += (short)(*A_t_data) * (short)(*(B_t_data+3*K));
+				A_t_data++;
+				B_t_data++;
+			}
+			(*(C_data)) = acc0;
+			(*(C_data+1)) = acc1;
+			(*(C_data+2)) = acc2;
+			(*(C_data+3)) = acc3;
+			C_data+=4;
+			B_t_data+=3*K;
+		}
+		j=N-((N>>2)<<2);
+		for(; j != 0; j--){
+			A_t_data = A_t_d;
+			int acc = 0;
+			int k=K>>2;
+			for(; k != 0; k--){
+				acc += (short)(*A_t_data) * (short)(*B_t_data);
+				acc += (short)(*(A_t_data+1)) * (short)(*(B_t_data+1));
+				acc += (short)(*(A_t_data+2)) * (short)(*(B_t_data+2));
+				acc += (short)(*(A_t_data+3)) * (short)(*(B_t_data+3));
+				A_t_data+=4;
+				B_t_data+=4;
+			}
+			k=K-((K>>2)<<2);
+			for(;k!=0;k--) {
+				acc += (short)(*A_t_data) * (short)(*B_t_data);
+				A_t_data++;
+				B_t_data ++;
+			}
+			(*C_data) = acc;
+			C_data++;
+		}
+		A_t_d += K;
+	}
+
+			gettimeofday(&end, NULL);
+			timersub(&end, &start, &res);
+			printf("ingemm time: %lf\n", (float)res.tv_sec*1000.0 + (float)res.tv_usec/1000.0);
+}
+*/
 //INT8 Edited
 void sblas_intgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const int alpha, const int* A, const float* B, const int beta, int* C) {
 	int* C_data = C;
@@ -47,13 +1211,74 @@ void sblas_intgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB, c
 	}
 }
 
+void caffe_cpu_asymm_offset(const char* in_c, const char* w_c, int* out, const unsigned char in_zero_point, const unsigned char* w_zero_point, int M, int N, int K) {
+	const unsigned char* in = (const unsigned char*) in_c;
+	const unsigned char* w = (const unsigned char*) w_c;
+	int* in_sum = (int*)malloc(sizeof(int)*N);
+	int* w_offset = (int*)malloc(sizeof(int)*M);
+
+	//in_offset
+	for(int i=0;i<N;i++) {
+		in_sum[i] = 0;
+		for(int j=0;j<K;j++) {
+			in_sum[i] += in[i + j*N];
+		}
+	}
+
+	//if(in_zero_point) {
+		//w_offset
+		for(int i=0;i<M;i++) {
+			w_offset[i] = 0;
+			for(int j=0;j<K;j++) {
+				w_offset[i] += w[i*K + j];
+			}
+			w_offset[i] *= in_zero_point;
+		}
+	//}
+
+	for(int i=0;i<M;i++) {
+		for(int j=0;j<N;j++) {
+			out[i*N + j] -= in_sum[j] * w_zero_point[i];
+			//if(in_zero_point) {
+				out[i*N + j] -= w_offset[i];
+				out[i*N + j] += K * in_zero_point * w_zero_point[i];
+			//}
+	//		printf("%d %d %d\n",in_sum[j] * w_zero_point[i],w_offset[i], in_zero_point * w_zero_point[i]);
+		}
+	}
+
+	free(w_offset);
+	free(in_sum);
+/*
+	printf("weight\n");
+	for(int i=0;i<M;i++) {
+		for(int j=0;j<K;j++) {
+			printf("%d ", w[i*K + j]);
+		}
+	}
+	printf("\n");
+	printf("zero: %d\n", in_zero_point);
+	for(int i=0;i<M;i++) {
+		printf("%d ", w_zero_point[i]);
+	}
+	printf("\n");*/
+}
+
 //INT8 Edited
-void caffe_cpu_gemm(const CBLAS_TRANSPOSE TransA,
+void caffe_cpu_cgemm(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
     const char alpha, const char* A, const char* B, const char beta,
-    int* C) {
+    int* C, char* B_T) {
   // char gemm
-  sblas_igemm(TransA, TransB, M, N, K, alpha, A, B, beta, C);
+  sblas_igemm(TransA, TransB, M, N, K, alpha, A, B, beta, C, B_T);
+}
+//INT8 Edited
+void caffe_cpu_asymm_cgemm(const CBLAS_TRANSPOSE TransA,
+    const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+    const char alpha, const char* A, const char* B, const char beta,
+    int* C, char* B_T) {
+  // char gemm
+  sblas_asymm_igemm(TransA, TransB, M, N, K, alpha, A, B, beta, C, B_T);
 }
 //INT8 Edited
 template<>

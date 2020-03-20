@@ -1,48 +1,571 @@
-CXX src/caffe/net.cpp
-src/caffe/net.cpp: In instantiation of 'Dtype caffe::Net<Dtype>::ForwardFromTo(int, int) [with Dtype = float]':
-src/caffe/net.cpp:1124:1:   required from here
-src/caffe/net.cpp:571:19: error: request for member 'count' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
-    for(int ii=0;ii<bottom_vecs_[i][0].count();ii++) {
-                   ^
-src/caffe/net.cpp:572:52: error: request for member 'cpu_data' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
-     fprintf(f, "%f ", bottom_vecs_[i][0].cpu_data()[ii]);
-                                                    ^
-src/caffe/net.cpp:569:8: warning: unused variable 'c' [-Wunused-variable]
-    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
-        ^
-src/caffe/net.cpp:602:19: error: request for member 'count' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
-    for(int ii=0;ii<top_vecs_[i][0].count();ii++) {
-                   ^
-src/caffe/net.cpp:603:49: error: request for member 'cpu_data' in '(&((caffe::Net<float>*)this)->caffe::Net<float>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >(((std::vector<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >, std::allocator<std::vector<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<float>*, std::allocator<caffe::Blob<float>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<float>*> >::value_type {aka caffe::Blob<float>*}' (maybe you meant to use '->' ?)
-     fprintf(f, "%f ", top_vecs_[i][0].cpu_data()[ii]);
-                                                 ^
-src/caffe/net.cpp:599:8: warning: unused variable 'c' [-Wunused-variable]
-    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
-        ^
-src/caffe/net.cpp:532:7: warning: unused variable 'np' [-Wunused-variable]
-  char np[100];
-       ^
-src/caffe/net.cpp: In instantiation of 'Dtype caffe::Net<Dtype>::ForwardFromTo(int, int) [with Dtype = double]':
-src/caffe/net.cpp:1124:1:   required from here
-src/caffe/net.cpp:571:19: error: request for member 'count' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
-    for(int ii=0;ii<bottom_vecs_[i][0].count();ii++) {
-                   ^
-src/caffe/net.cpp:572:52: error: request for member 'cpu_data' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::bottom_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
-     fprintf(f, "%f ", bottom_vecs_[i][0].cpu_data()[ii]);
-                                                    ^
-src/caffe/net.cpp:569:8: warning: unused variable 'c' [-Wunused-variable]
-    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
-        ^
-src/caffe/net.cpp:602:19: error: request for member 'count' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
-    for(int ii=0;ii<top_vecs_[i][0].count();ii++) {
-                   ^
-src/caffe/net.cpp:603:49: error: request for member 'cpu_data' in '(&((caffe::Net<double>*)this)->caffe::Net<double>::top_vecs_.std::vector<_Tp, _Alloc>::operator[]<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >(((std::vector<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >, std::allocator<std::vector<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> > > >::size_type)i)))->std::vector<_Tp, _Alloc>::operator[]<caffe::Blob<double>*, std::allocator<caffe::Blob<double>*> >(0ul)', which is of pointer type '__gnu_cxx::__alloc_traits<std::allocator<caffe::Blob<double>*> >::value_type {aka caffe::Blob<double>*}' (maybe you meant to use '->' ?)
-     fprintf(f, "%f ", top_vecs_[i][0].cpu_data()[ii]);
-                                                 ^
-src/caffe/net.cpp:599:8: warning: unused variable 'c' [-Wunused-variable]
-    int c = tensor[0]*tensor[1]*tensor[2]*tensor[3];
-        ^
-src/caffe/net.cpp:532:7: warning: unused variable 'np' [-Wunused-variable]
-  char np[100];
-       ^
-Makefile:592: recipe for target '.build_debug/src/caffe/net.o' failed
+pre compute time :2.00963 ms 
+8
+8
+0 1
+1 2
+2 3
+3 4
+4 5
+5 6
+6 7
+7 8
+8
+8
+0 2
+2 4
+4 6
+6 8
+8 10
+10 12
+12 14
+14 16
+8
+8
+0 4
+4 8
+8 12
+12 16
+16 20
+20 24
+24 28
+28 32
+8
+8
+0 4
+4 8
+8 12
+12 16
+16 20
+20 24
+24 28
+28 32
+8
+8
+0 8
+8 16
+16 24
+24 32
+32 40
+40 48
+48 56
+56 64
+8
+8
+0 8
+8 16
+16 24
+24 32
+32 40
+40 48
+48 56
+56 64
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 16
+16 32
+32 48
+48 64
+64 80
+80 96
+96 112
+112 128
+8
+8
+0 32
+32 64
+64 96
+96 128
+128 160
+160 192
+192 224
+224 256
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+8
+infer compute time :108.653 ms 
+s1 compute time :0.009256 ms 
+s1 compute time :0.016092 ms 
+s1 compute time :0.053049 ms 
+post compute time :0.20747 ms 
+face num: 29
+face bbox xmin: 40.4859
+face bbox ymin: 214.765
+face bbox xmax: 110.432
+face bbox ymax: 279.054
+landmark x : 62.4385
+landmark y : 239.499
+landmark x : 93.2599
+landmark y : 238.496
+landmark x : 80.5753
+landmark y : 251.966
+landmark x : 66.6317
+landmark y : 263.733
+landmark x : 90.6075
+landmark y : 263.004
+face bbox xmin: 108.967
+face bbox ymin: 224.902
+face bbox xmax: 171.658
+face bbox ymax: 279.809
+landmark x : 125.909
+landmark y : 244.617
+landmark x : 153.79
+landmark y : 247.138
+landmark x : 136.854
+landmark y : 256.009
+landmark x : 124.96
+landmark y : 264.877
+landmark x : 147.613
+landmark y : 266.858
+face bbox xmin: 222.161
+face bbox ymin: 138.468
+face bbox xmax: 285.222
+face bbox ymax: 192.887
+landmark x : 241.874
+landmark y : 160.292
+landmark x : 268.857
+landmark y : 158.155
+landmark x : 259.99
+landmark y : 170.328
+landmark x : 249.065
+landmark y : 180.404
+landmark x : 269.012
+landmark y : 178.768
+face bbox xmin: 379.371
+face bbox ymin: 24.588
+face bbox xmax: 423.27
+face bbox ymax: 62.4349
+landmark x : 389.242
+landmark y : 39.0471
+landmark x : 409.725
+landmark y : 38.4958
+landmark x : 399.025
+landmark y : 46.1012
+landmark x : 391.715
+landmark y : 52.7912
+landmark x : 409.13
+landmark y : 52.3772
+face bbox xmin: 87.8117
+face bbox ymin: 6.2024
+face bbox xmax: 128.438
+face bbox ymax: 43.9167
+landmark x : 97.453
+landmark y : 21.3162
+landmark x : 115.021
+landmark y : 21.5369
+landmark x : 105.221
+landmark y : 28.6991
+landmark x : 99.2626
+landmark y : 34.7967
+landmark x : 113.417
+landmark y : 34.9276
+face bbox xmin: 45.5963
+face bbox ymin: 8.55349
+face bbox xmax: 87.6415
+face bbox ymax: 49.0651
+landmark x : 54.0116
+landmark y : 25.4024
+landmark x : 72.0019
+landmark y : 24.6233
+landmark x : 61.8139
+landmark y : 32.3798
+landmark x : 56.9522
+landmark y : 39.6819
+landmark x : 71.8872
+landmark y : 39.0427
+face bbox xmin: 244.193
+face bbox ymin: 85.8588
+face bbox xmax: 292.576
+face bbox ymax: 126.445
+landmark x : 258.177
+landmark y : 100.264
+landmark x : 280.41
+landmark y : 100.161
+landmark x : 270.087
+landmark y : 109.183
+landmark x : 260.704
+landmark y : 116.343
+landmark x : 278.414
+landmark y : 116.291
+face bbox xmin: 231.605
+face bbox ymin: 27.077
+face bbox xmax: 276.237
+face bbox ymax: 67.0274
+landmark x : 239.358
+landmark y : 42.7324
+landmark x : 258.946
+landmark y : 40.784
+landmark x : 248.676
+landmark y : 49.8128
+landmark x : 244.624
+landmark y : 57.5224
+landmark x : 260.983
+landmark y : 55.9665
+face bbox xmin: 302.879
+face bbox ymin: 86.3604
+face bbox xmax: 349.416
+face bbox ymax: 126.118
+landmark x : 312.839
+landmark y : 102.516
+landmark x : 333.17
+landmark y : 100.221
+landmark x : 323.597
+landmark y : 109.332
+landmark x : 318.517
+landmark y : 116.526
+landmark x : 335.568
+landmark y : 114.694
+face bbox xmin: 335.3
+face bbox ymin: 10.2167
+face bbox xmax: 381.42
+face bbox ymax: 49.8253
+landmark x : 348.894
+landmark y : 26.1197
+landmark x : 370.55
+landmark y : 23.6882
+landmark x : 363.272
+landmark y : 32.796
+landmark x : 354.674
+landmark y : 39.8138
+landmark x : 373.193
+landmark y : 37.9296
+face bbox xmin: 388.635
+face bbox ymin: 213.05
+face bbox xmax: 449.786
+face bbox ymax: 268.297
+landmark x : 404.188
+landmark y : 234.833
+landmark x : 431.064
+landmark y : 233.307
+landmark x : 418.469
+landmark y : 245.589
+landmark x : 408.821
+landmark y : 255.535
+landmark x : 429.403
+landmark y : 254.375
+face bbox xmin: 69.6837
+face bbox ymin: 70.5289
+face bbox xmax: 115.776
+face bbox ymax: 113.04
+landmark x : 78.8446
+landmark y : 86.5999
+landmark x : 99.9352
+landmark y : 85.4382
+landmark x : 89.0018
+landmark y : 94.5337
+landmark x : 82.6204
+landmark y : 102.317
+landmark x : 100.811
+landmark y : 101.387
+face bbox xmin: 211.726
+face bbox ymin: 230.464
+face bbox xmax: 273.685
+face bbox ymax: 286.201
+landmark x : 235.51
+landmark y : 249.699
+landmark x : 261.781
+landmark y : 252.432
+landmark x : 249.926
+landmark y : 263.03
+landmark x : 233.482
+landmark y : 270.904
+landmark x : 255.103
+landmark y : 273.133
+face bbox xmin: 420.835
+face bbox ymin: 70.8881
+face bbox xmax: 463.981
+face bbox ymax: 112.126
+landmark x : 430.112
+landmark y : 86.6282
+landmark x : 448.202
+landmark y : 88.0014
+landmark x : 435.559
+landmark y : 94.8544
+landmark x : 430.028
+landmark y : 101.853
+landmark x : 443.745
+landmark y : 102.868
+face bbox xmin: 426.748
+face bbox ymin: 9.27017
+face bbox xmax: 464.544
+face bbox ymax: 50.0808
+landmark x : 439.79
+landmark y : 25.3898
+landmark x : 460.058
+landmark y : 26.1272
+landmark x : 449.125
+landmark y : 34.0284
+landmark x : 440.943
+landmark y : 40.8744
+landmark x : 455.763
+landmark y : 41.486
+face bbox xmin: 129.374
+face bbox ymin: 7.02522
+face bbox xmax: 172.671
+face bbox ymax: 46.4168
+landmark x : 141.891
+landmark y : 23.0552
+landmark x : 161.247
+landmark y : 22.3279
+landmark x : 152.866
+landmark y : 30.2588
+landmark x : 145.087
+landmark y : 37.0615
+landmark x : 160.572
+landmark y : 36.5083
+face bbox xmin: 320.418
+face bbox ymin: 212.941
+face bbox xmax: 372.62
+face bbox ymax: 257.066
+landmark x : 339.609
+landmark y : 226.817
+landmark x : 362.009
+landmark y : 225.902
+landmark x : 354.662
+landmark y : 234.111
+landmark x : 343.291
+landmark y : 243.909
+landmark x : 361.917
+landmark y : 243.223
+face bbox xmin: 190.982
+face bbox ymin: 10.5415
+face bbox xmax: 232.139
+face bbox ymax: 44.5444
+landmark x : 205.304
+landmark y : 20.8355
+landmark x : 224.123
+landmark y : 23.3887
+landmark x : 213.661
+landmark y : 28.3421
+landmark x : 202.274
+landmark y : 33.4937
+landmark x : 217.972
+landmark y : 35.5359
+face bbox xmin: 0
+face bbox ymin: 6.10798
+face bbox xmax: 37.8271
+face bbox ymax: 45.0561
+landmark x : 7.01242
+landmark y : 21.7608
+landmark x : 23.3162
+landmark y : 19.9714
+landmark x : 17.6472
+landmark y : 28.483
+landmark x : 12.5432
+landmark y : 35.6501
+landmark x : 26.7812
+landmark y : 34.3109
+face bbox xmin: 3.94577
+face bbox ymin: 69.5752
+face bbox xmax: 49.8047
+face bbox ymax: 111.564
+landmark x : 14.5489
+landmark y : 85.5702
+landmark x : 36.1803
+landmark y : 85.0732
+landmark x : 25.0039
+landmark y : 93.9978
+landmark x : 17.3792
+landmark y : 101.047
+landmark x : 35.1755
+landmark y : 100.633
+face bbox xmin: 139.061
+face bbox ymin: 79.5979
+face bbox xmax: 185.648
+face bbox ymax: 123.38
+landmark x : 158.784
+landmark y : 95.8206
+landmark x : 178.231
+landmark y : 97.2911
+landmark x : 170.607
+landmark y : 105.73
+landmark x : 157.812
+landmark y : 112.274
+landmark x : 173.368
+landmark y : 113.524
+face bbox xmin: 413.458
+face bbox ymin: 146.594
+face bbox xmax: 459.173
+face bbox ymax: 190.08
+landmark x : 428.706
+landmark y : 162.929
+landmark x : 449.999
+landmark y : 165.428
+landmark x : 438.979
+landmark y : 173.392
+landmark x : 426.625
+landmark y : 179.588
+landmark x : 443.503
+landmark y : 181.619
+face bbox xmin: 162.82
+face bbox ymin: 187.394
+face bbox xmax: 222.072
+face bbox ymax: 237.544
+landmark x : 179.119
+landmark y : 205.364
+landmark x : 204.996
+landmark y : 205.297
+landmark x : 192.469
+landmark y : 215.673
+landmark x : 181.825
+landmark y : 224.685
+landmark x : 201.919
+landmark y : 224.663
+face bbox xmin: 355.983
+face bbox ymin: 83.3101
+face bbox xmax: 399.863
+face bbox ymax: 121.201
+landmark x : 374.655
+landmark y : 96.3804
+landmark x : 393.535
+landmark y : 98.744
+landmark x : 384.738
+landmark y : 105.446
+landmark x : 371.989
+landmark y : 110.496
+landmark x : 386.978
+landmark y : 112.422
+face bbox xmin: 94.603
+face bbox ymin: 139.177
+face bbox xmax: 142.908
+face bbox ymax: 183.326
+landmark x : 108.775
+landmark y : 155.28
+landmark x : 130.727
+landmark y : 154.336
+landmark x : 121.23
+landmark y : 164.011
+landmark x : 111.966
+landmark y : 172.493
+landmark x : 129.707
+landmark y : 171.801
+face bbox xmin: 173.539
+face bbox ymin: 114.547
+face bbox xmax: 221.835
+face bbox ymax: 157.66
+landmark x : 186.963
+landmark y : 129.498
+landmark x : 208.641
+landmark y : 129.208
+landmark x : 198.255
+landmark y : 138.315
+landmark x : 189.353
+landmark y : 146.485
+landmark x : 207.243
+landmark y : 146.267
+face bbox xmin: 1.48561
+face bbox ymin: 161.426
+face bbox xmax: 61.8409
+face bbox ymax: 211.255
+landmark x : 18.8264
+landmark y : 178.916
+landmark x : 45.1914
+landmark y : 178.164
+landmark x : 32.9793
+landmark y : 188.905
+landmark x : 22.4811
+landmark y : 198.643
+landmark x : 42.8336
+landmark y : 198.036
+face bbox xmin: 356.434
+face bbox ymin: 168.1
+face bbox xmax: 401.806
+face bbox ymax: 206.285
+landmark x : 371.506
+landmark y : 180.221
+landmark x : 391.373
+landmark y : 181.234
+landmark x : 381.735
+landmark y : 188.361
+landmark x : 371.616
+landmark y : 195.805
+landmark x : 387.523
+landmark y : 196.643
+face bbox xmin: 277.511
+face bbox ymin: 19.6567
+face bbox xmax: 317.911
+face bbox ymax: 54.7739
+landmark x : 290.065
+landmark y : 32.7813
+landmark x : 308.802
+landmark y : 32.7438
+landmark x : 301.085
+landmark y : 40.5034
+landmark x : 291.949
+landmark y : 46.2416
+landmark x : 307.539
+landmark y : 46.2712
+pre = 0.00200963 ms
+infer = 0.108653 ms
+post = 0.00020747 ms
+face num = 29

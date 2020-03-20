@@ -545,24 +545,24 @@ void computeBNFold(Net<float> &caffe_net, std::vector<LayerQuantData> &quant_dat
 
 		float* weight_data = weight->mutable_cpu_data();
 		int num = weight->shape()[0], vol = weight->shape()[1]*weight->shape()[2]*weight->shape()[3];
-		printf("weight: ");
+		//printf("weight: ");
 		for(int n=0; n<num; n++) {
 			float gamma = gamma_data[n];
 			float var = var_data[n];
 			float factor = gamma / sqrt(var);
-			printf("factor: %f %f %f\n", gamma, var, factor);
+			//printf("factor: %f %f %f\n", gamma, var, factor);
 			for(int v=0; v<vol; v++) {
 				weight_data[v] *= factor;
-				printf("%f, ", weight_data[v]);
+				//printf("%f, ", weight_data[v]);
 			}
 			weight_data += vol;
 		}
-		printf("\n");
+		//printf("\n");
 
 		//if (has_bias)
 		//{
 			float* bias_data = bias->mutable_cpu_data();
-			printf("bias: ");
+			//printf("bias: ");
 			for(int n=0; n<num; n++) {
 				float gamma = gamma_data[n];
 				float var = var_data[n];
@@ -570,9 +570,9 @@ void computeBNFold(Net<float> &caffe_net, std::vector<LayerQuantData> &quant_dat
 				float beta = beta_data[n];
 
 				bias_data[n] = gamma / sqrt(var) * (bias_data[n] - mean) + beta;
-				printf("%f, ", bias_data[n]);
+				//printf("%f, ", bias_data[n]);
 			}
-			printf("\n");
+			//printf("\n");
 		//}
 	}
 }
@@ -624,7 +624,7 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 			}
 		}
 	*/	
-			printf("weight factor: ");
+			//printf("weight factor: ");
 		for (int j=0;j<weight->num();j++){
 			float max = 0.00000001;
 			const float *data_array = weight->cpu_data() + (j * height*width*channels);
@@ -648,9 +648,9 @@ void computeWeightQuantize(Net<float> &caffe_net, std::vector<LayerQuantData> &q
 					quant_data[i].weight_scale_factor[j] = 127.0f / max;
 				}
 			}
-			printf("%f ", quant_data[i].weight_scale_factor[j]);
+			//printf("%f ", quant_data[i].weight_scale_factor[j]);
 		}
-		printf("\n");
+		//printf("\n");
 		if(quant_data[i].winograd != isWino) {
 			std::cout<<"Winograd Unmatched\n";
 			exit(0);
@@ -818,9 +818,9 @@ void SaveQuantizedModel(Net<float> &caffe_net, std::string src_model_path, std::
 				signed char int8_weight = (signed char)quantized_weight;
 				int8_data.push_back(int8_weight);
 
-				std::cout<<(int)int8_weight<<"("<<fp32_weight<<","<<quant_data[j].weight_scale_factor[k/length]<<") ";
+				//std::cout<<(int)int8_weight<<"("<<fp32_weight<<","<<quant_data[j].weight_scale_factor[k/length]<<") ";
 			}
-			std::cout<<"\n";
+			//std::cout<<"\n";
 			for (int k = 0; k <  blob->shape().dim(0); k++) {
 				float fp32_bias = bias_data[k];
 				float quantized_bias = (fp32_bias * quant_data[j].weight_scale_factor[k] * quant_data[j].activation_scale_factor);
@@ -847,9 +847,9 @@ void SaveQuantizedModel(Net<float> &caffe_net, std::string src_model_path, std::
 				//printf("%f ", fp32_bias);
 
 				bias_blob->add_int_data(int8_bias);
-				std::cout<<(int)int8_bias<<" ";
+				//std::cout<<(int)int8_bias<<" ";
 			}
-			printf("\n");
+			//printf("\n");
 
 			blob->set_int8_data(int8_data);
 			

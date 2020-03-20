@@ -516,7 +516,7 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
   }
 }
 
-#define SVAE
+//#define SVAE
 template <typename Dtype>
 Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
   CHECK_GE(start, 0);
@@ -909,19 +909,54 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
 		if(true){
 		layers_[target_layer_id]->activation_scale_factor() = source_layer.activation_scale_factor();
 		layers_[target_layer_id]->activation_zero_point() = source_layer.activation_zero_point();
-		    DLOG(INFO) <<"sclae factor: "<<layers_[target_layer_id]->activation_scale_factor()<<"\n";
-		    DLOG(INFO) <<"zero point: "<<layers_[target_layer_id]->activation_zero_point()<<"\n";
+		if(source_layer.has_activation_zero_point() && source_layer.activation_zero_point()>=0) {
+			layers_[target_layer_id]->int8_symmetric() = false;
+		}
+		else {
+			//layers_[target_layer_id]->activation_zero_point() = 128;
+		}
+		    DLOG(INFO) <<"act scale factor: "<<layers_[target_layer_id]->activation_scale_factor()<<"\n";
+		    DLOG(INFO) <<"act zero point: "<<layers_[target_layer_id]->activation_zero_point()<<"\n";
+		    //std::cout <<"act scale factor: "<<layers_[target_layer_id]->activation_scale_factor()<<"\n";
+		    //std::cout <<"act zero point: "<<(int)layers_[target_layer_id]->activation_zero_point()<<"\n";
 		}
 		//if (source_layer.weight_scale_factor_size() > 0) {
 		if(true){
+			bool perlayer = true;
 			//printf("weight scale length: %d\n", source_layer.weight_scale_factor_size());
 			layers_[target_layer_id]->weight_scale_factor().reserve(source_layer.weight_scale_factor_size());
 			for(int i = 0; i < source_layer.weight_scale_factor_size(); i++) {
 				layers_[target_layer_id]->weight_scale_factor().push_back( source_layer.weight_scale_factor(i) );
 			//	printf("%lf ", source_layer.weight_scale_factor(i));
-				if(i==source_layer.weight_scale_factor_size()-1) DLOG(INFO) <<"scale factor: "<<layers_[target_layer_id]->weight_scale_factor()[i];
+				if(i==source_layer.weight_scale_factor_size()-1) DLOG(INFO) <<"weight scale factor: "<<layers_[target_layer_id]->weight_scale_factor()[i];
+			//	if(i==source_layer.weight_scale_factor_size()-1) std::cout <<"weight scale factor: "<<layers_[target_layer_id]->weight_scale_factor()[i]<<"\n";
+				if(source_layer.weight_scale_factor(i) != source_layer.weight_scale_factor((i==0)?(0):(i-1))) perlayer = false;
 			}
-		    DLOG(INFO) <<"sclae factor: "<<source_layer.weight_scale_factor_size()<<"\n";
+			layers_[target_layer_id]->weight_zero_point().reserve(source_layer.weight_zero_point_size());
+			for(int i = 0; i < source_layer.weight_zero_point_size(); i++) {
+				layers_[target_layer_id]->weight_zero_point().push_back( source_layer.weight_zero_point(i) );
+				if(i==source_layer.weight_zero_point_size()-1) DLOG(INFO) <<"weight zero point: "<<layers_[target_layer_id]->weight_zero_point()[i];
+			//	if(i==source_layer.weight_zero_point_size()-1) std::cout <<"weight zero point: "<<(int)layers_[target_layer_id]->weight_zero_point()[i]<<"\n";
+			}
+
+			/*if(layers_[target_layer_id]->int8_symmetric()==true) {
+				layers_[target_layer_id]->int8_symmetric() = false;
+				layers_[target_layer_id]->weight_zero_point().reserve(source_layer.weight_scale_factor_size());
+				for(int i = 0; i < source_layer.weight_scale_factor_size(); i++) {
+					layers_[target_layer_id]->weight_zero_point().push_back( 128 );
+				}
+				const signed char* sc = (const signed char*)target_int8_blobs[0]->cpu_data();
+				unsigned char* uc = (unsigned char*) target_int8_blobs[0]->mutable_cpu_data();
+				for(int i=0;i<target_int8_blobs[0]->count();i++) {
+					uc[i] = (unsigned char)(sc[i] + 128);
+				}
+			}*/
+
+			printf("%s ",(perlayer)?("per-layer"):("per-channel")); 
+		    DLOG(INFO) <<"scale factor: "<<source_layer.weight_scale_factor_size()<<"\n";
+			if(perlayer) DLOG(INFO) <<"per-layer\n";
+			else DLOG(INFO) <<"per-channel\n";
+			//std::cout <<"scale factor: "<<source_layer.weight_scale_factor_size()<<"\n";
 		}
 	}
   }

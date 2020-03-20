@@ -6,6 +6,8 @@
 #include "caffe/util/im2col.hpp"
 #include "caffe/util/math_functions.hpp"
 
+#include <boost/thread.hpp>
+
 namespace caffe {
 
 template <typename Dtype>
@@ -291,10 +293,27 @@ void BaseConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
 }
 
+#ifndef THREADN
+#define THREADN 8
+inline int _ceil(int a, int b)
+{
+	return (a-1) / b + 1;
+}
+#endif
+int wo; int co; int oo;
+void run_caffe_int8_cpu_gemm(const int M, const int N, const int K,
+    const char* A, const char* B, int* C, int group_, int s, int t) {
+  // char gemm
+  	char* B_T = (char*)malloc(sizeof(char) * N * K);
+  	for (int g = s; g < t; ++g) {
+	    caffe_cpu_cgemm(CblasNoTrans, CblasNoTrans, M / group_, N, K, 1, A+g*wo, B+g*co, 0, C+g*oo, B_T);
+	}
+	free(B_T);
+}
+
 //INT8 Edited
 template <typename Dtype>
-void BaseConvolutionLayer<Dtype>::forward_cpu_gemm_int8_conv(const char* input,
-    const char* weights, int* output, bool skip_im2col) {
+void BaseConvolutionLayer<Dtype>::forward_cpu_gemm_int8_conv(const char* input, const char* weights, int* output, bool skip_im2col) {
   const char* col_buff = input;
   if (!is_1x1_) {
     if (!skip_im2col) {
@@ -303,13 +322,62 @@ void BaseConvolutionLayer<Dtype>::forward_cpu_gemm_int8_conv(const char* input,
     }
     col_buff = col_buffer_int8_.cpu_data();
   }
-  for (int g = 0; g < group_; ++g) {
-	  // src/caffe/util/math_functions.h
-    caffe_cpu_gemm(CblasNoTrans, CblasNoTrans, conv_out_channels_ /
-        group_, conv_out_spatial_dim_, kernel_dim_,
-        1, weights + weight_offset_ * g, col_buff + col_offset_ * g,
-        0, output + output_offset_ * g);
+  if(group_ >= THREADN) {
+  	boost::thread t[THREADN+1];
+	int fac = _ceil(group_ , THREADN);
+	int s = 0;
+	int e = fac;
+	wo = weight_offset_;
+	co = col_offset_;
+	oo = output_offset_;
+	for (int i = 0; i < THREADN; i++) {
+		if(group_ < e) e = group_;
+		t[i] = boost::thread{run_caffe_int8_cpu_gemm, conv_out_channels_,
+		   	conv_out_spatial_dim_, kernel_dim_,
+	        weights, col_buff,
+	        output, group_, s, e};
+		s += fac;
+		e += fac;
+	}
+	for (int i = 0; i < THREADN; i++) {
+		t[i].join();
+	}
   }
+  else {
+  	char* B_T = (char*)malloc(sizeof(char) * conv_out_spatial_dim_ * kernel_dim_);
+  	for (int g = 0; g < group_; ++g) {
+		  // src/caffe/util/math_functions.h
+	    caffe_cpu_cgemm(CblasNoTrans, CblasNoTrans, conv_out_channels_ /
+	        group_, conv_out_spatial_dim_, kernel_dim_,
+	        1, weights + weight_offset_ * g, col_buff + col_offset_ * g,
+	        0, output + output_offset_ * g, B_T);
+	}
+	free(B_T);
+  }
+}
+
+
+//INT8 Edited
+template <typename Dtype>
+void BaseConvolutionLayer<Dtype>::forward_cpu_asymm_gemm_int8_conv(const char* input, const char* weights, int* output, bool skip_im2col) {
+  const char* col_buff = input;
+  if (!is_1x1_) {
+    if (!skip_im2col) {
+		// include/caffe/layes/base_conv_layer.cpp
+      conv_im2col_cpu_int8_conv(input, col_buffer_int8_.mutable_cpu_data(), this->activation_zero_point());
+    }
+    col_buff = col_buffer_int8_.cpu_data();
+  }
+  	char* B_T = (char*)malloc(sizeof(char) * conv_out_spatial_dim_ * kernel_dim_);
+  	for (int g = 0; g < group_; ++g) {
+		  // src/caffe/util/math_functions.h
+	    caffe_cpu_asymm_cgemm(CblasNoTrans, CblasNoTrans, conv_out_channels_ /
+	        group_, conv_out_spatial_dim_, kernel_dim_,
+	        1, weights + weight_offset_ * g, col_buff + col_offset_ * g,
+	        0, output + output_offset_ * g, B_T);
+		caffe_cpu_asymm_offset(col_buff + col_offset_ * g, weights + weight_offset_ * g, output + output_offset_ * g, (const unsigned char)this->activation_zero_point(), (const unsigned char*)(&this->weight_zero_point()[0]), conv_out_channels_ / group_, conv_out_spatial_dim_, kernel_dim_);
+	}
+	free(B_T);
 }
 
 template <typename Dtype>

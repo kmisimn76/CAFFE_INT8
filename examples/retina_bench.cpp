@@ -447,8 +447,32 @@ int main(void)
 	boost::shared_ptr<Net<float> > Net_;
 	//Net_.reset(new Net<float>(("/home/dohe0342/extract-caffe-params/retina_model/mnet-deconv-0517.prototxt"), TEST));
 	//Net_->CopyTrainedLayersFrom(("/home/dohe0342/extract-caffe-params/retina_model//mnet-deconv-0517.caffemodel"));
-	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model_back/converted_deploy.prototxt"), TEST));
-	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model_back/converted_model.caffemodel"));
+	//Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy.prototxt"), TEST));
+	//Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model.caffemodel"));
+	int modelmode = 3;
+	switch(modelmode)
+	{
+		case 0:
+	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy_perchannel_1000images.prototxt"), TEST));
+	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model_perchannel_1000images.caffemodel"));
+		break;
+		case 1:
+	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy_perchannel_10images.prototxt"), TEST));
+	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model_perchannel_10images.caffemodel"));
+		break;
+		case 2:
+	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy_perlayer_1000images.prototxt"), TEST));
+	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model_perlayer_1000images.caffemodel"));
+		break;
+		case 3:
+	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy_perlayer_10images.prototxt"), TEST));
+	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model_perlayer_10images.caffemodel"));
+		break;
+		case 4:
+	Net_.reset(new Net<float>(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_deploy_perchannel_10images_bnfold.prototxt"), TEST));
+	Net_->CopyTrainedLayersFrom(("/home/abab2365/workspace/etri1/int8_models/mnet/model/converted_model_perchannel_10images_bnfold.caffemodel"));
+		break;
+	}
 
 	/////////////////////////////////////////////////////////////
 
@@ -457,7 +481,7 @@ int main(void)
 	float nms_threshold = 0.20;
 	
 	FILE* caffe_result;
-	caffe_result = fopen("caffe_result_th0.30_nms_0.20.txt", "w");
+	caffe_result = fopen("caffe_result_th0.30_nms_0.20_int8_pl_10_v1.txt", "w");
 
 	vector<int> _feat_stride_fpn;
 	map<string, int> _num_anchors;
@@ -508,7 +532,7 @@ int main(void)
 	}
 	cout << fileList << endl;
 	*/
-	//ifstream filelist("/home/dohe0342/retina_benchmark/val_list.txt");
+	//ifstream filelist("/home/abab2365/retina_benchmark/val_list_temp.txt");
 	ifstream filelist("/home/abab2365/retina_benchmark/val_list_sumin.txt");
 	string s;
 	vector<string> file;
@@ -517,7 +541,7 @@ int main(void)
 			file.push_back(s);
 	}
 
-	for (int ii = 0; ii < file.size(); ii++) {
+	for (int ii = 0; ii < file.size()-1; ii++) {
 	
 	vector<string> directory_parser = string_split(file[ii], '/');
 	vector<string> name_parser = string_split(directory_parser[directory_parser.size()-1], '.');
@@ -584,7 +608,12 @@ int main(void)
 						
 					//////////////////////////////////////inference//////////////////////////////////////////////////////////
 					//double t1 = (double)getTickCount();
+					struct timeval st, ed, rst;
+					gettimeofday(&st, NULL);
 					Net_->Forward();
+					gettimeofday(&ed, NULL);
+					timersub(&ed, &st, &rst);
+					printf("forward: %lf\n", (float)rst.tv_sec*1000.0 + (float)rst.tv_usec/1000.0);
 					//t1 = (double)getTickCount() - t1;
 					//cout << "infer compute time :" << t1 * 1000.0 / getTickFrequency() << " ms \n";
 					/////////////////////////////////////postprocess/////////////////////////////////////////////////////////

@@ -645,5 +645,7 @@ int main(void)
 	cout << "pre = " << pre_all/1000.0 << " ms" << endl;
 	cout << "infer = " << infer_all/1000.0 << " ms" << endl;
 	cout << "post = " << post_all/1000.0 << " ms" << endl;
+
+	cout << "face num = " << faceInfo.size() << endl;
 	return 0;
 }
